@@ -4,3 +4,6 @@ version = "0.1.0"
 authors = ["Robert Lord <robert@lord.io>"]
 
 [dependencies]
+tokio-service = { git = "https://github.com/tokio-rs/tokio-service" }
+tokio-hyper = { git = "https://github.com/tokio-rs/tokio-hyper" }
+futures = "0.1.2"

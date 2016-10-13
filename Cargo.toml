@@ -7,3 +7,4 @@ authors = ["Robert Lord <robert@lord.io>"]
 tokio-service = { git = "https://github.com/tokio-rs/tokio-service" }
 tokio-hyper = { git = "https://github.com/tokio-rs/tokio-hyper" }
 futures = "0.1.2"
+tokio-minihttp = { git = "https://github.com/tokio-rs/tokio-minihttp" }

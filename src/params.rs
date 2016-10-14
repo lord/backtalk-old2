@@ -4,9 +4,9 @@ pub struct Params {
   data: HashMap<String,String>
 }
 
-pub fn new(map: HashMap<String,String>) -> Params {
+pub fn new() -> Params {
   return Params {
-    data: map
+    data: HashMap::<String,String>::new()
   }
 }
 

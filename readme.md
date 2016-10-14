@@ -4,7 +4,7 @@ A web framework for APIs in Rust.
 
 - [ ] rename `Resource` to something better (not `Service`, with Tokio that's confusing)
 - [ ] add request and response structs
-- [ ] add proper `find`, `get`, `create`, `update`, `patch`, `remove` (`setup`?) with `Vec<Self::Object>` results
+- [x] add proper `find`, `get`, `create`, `update`, `patch`, `remove` (`setup`?) with `Vec<Self::Object>` results
 - [ ] add hooks/filters
 - [ ] Add `DatabaseResource` that just accepts a Diesel object/db connection and automatically becomes a full resource.
 - [ ] websocket serving with `ws-rs`

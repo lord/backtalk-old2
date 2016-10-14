@@ -3,6 +3,7 @@ use serde::{Serialize, Deserialize};
 use serde_json;
 use tokio_service::Service;
 use futures::{finished, Future, BoxFuture, Async};
+use ::params::Params;
 
 // #[derive(Clone)]
 pub struct ResourceServer<T: Resource> {
@@ -15,9 +16,14 @@ pub type ListReply<T: Resource> = BoxFuture<Vec<T::Object>, T::Error>;
 pub trait Resource: Sized {
   type Object: Serialize + Deserialize + 'static + Send;
   type Error: Serialize + Deserialize + 'static + Send;
+  type Id: Serialize + Deserialize + 'static + Send;
 
-  fn list(&self) -> ListReply<Self>;
-  fn obj(&self) -> Reply<Self>;
+  fn find(&self, &Params) -> ListReply<Self>;
+  fn get(&self, &Self::Id, &Params) -> Reply<Self>;
+  fn create(&self, &Self::Object, &Params) -> Reply<Self>;
+  fn update(&self, &Self::Id, &Self::Object, &Params) -> Reply<Self>;
+  fn patch(&self, &Self::Id, &Self::Object, &Params) -> Reply<Self>;
+  fn remove(&self, &Self::Id, &Params) -> Reply<Self>;
 
   fn resp(&self, obj: Vec<Self::Object>) -> ListReply<Self> {
     finished::<Vec<Self::Object>, Self::Error>(obj).boxed()
@@ -47,7 +53,7 @@ impl <T: Resource> Service for ResourceServer<T> {
 
       // let body = serde_json::from_str<T::Object>(&body_string);
 
-      self.resource.list().then(|res| {
+      self.resource.find(&::params::new()).then(|res| {
         let resp_string = match res {
           Ok(i) => serde_json::to_string(&i).unwrap(),
           Err(i) => serde_json::to_string(&i).unwrap(),

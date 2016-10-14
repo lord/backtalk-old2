@@ -9,14 +9,17 @@ pub struct ResourceServer<T: Resource> {
   resource: T,
 }
 
+pub type Reply<T: Resource> = BoxFuture<T::Object, T::Error>;
+pub type ListReply<T: Resource> = BoxFuture<Vec<T::Object>, T::Error>;
+
 pub trait Resource: Sized {
   type Object: Serialize + 'static + Send;
   type Error: Serialize + 'static + Send;
 
-  fn list(&self) -> BoxFuture<Vec<Self::Object>, Self::Error>;
-  fn obj(&self) -> BoxFuture<Self::Object, Self::Error>;
+  fn list(&self) -> ListReply<Self>;
+  fn obj(&self) -> Reply<Self>;
 
-  fn resp(&self, obj: Vec<Self::Object>) -> BoxFuture<Vec<Self::Object>, Self::Error> {
+  fn resp(&self, obj: Vec<Self::Object>) -> ListReply<Self> {
     finished::<Vec<Self::Object>, Self::Error>(obj).boxed()
   }
 

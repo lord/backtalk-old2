@@ -3,7 +3,7 @@ extern crate futures;
 extern crate tokio_hyper as http;
 
 use std::collections::HashMap;
-use backtalk::resource::Resource;
+use backtalk::resource::{resource};
 use std::time::Duration;
 use std::thread;
 use futures::{Future, BoxFuture, finished};
@@ -18,7 +18,7 @@ impl Resource for MyResource {
     let mut map = HashMap::new();
     map.insert("test".to_string(), "blah".to_string());
     let v = vec![map];
-    finished::<Vec<Self::Object>, Self::Error>(v).boxed()
+    self.resp(v)
   }
 
   fn obj(&self) -> BoxFuture<Self::Object, Self::Error> {

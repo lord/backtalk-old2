@@ -2,7 +2,7 @@ use http;
 use serde::Serialize;
 use serde_json;
 use tokio_service::Service;
-use futures::{Future, BoxFuture, Async};
+use futures::{finished, Future, BoxFuture, Async};
 
 // #[derive(Clone)]
 pub struct ResourceServer<T: Resource> {
@@ -10,11 +10,15 @@ pub struct ResourceServer<T: Resource> {
 }
 
 pub trait Resource: Sized {
-  type Object: Serialize + 'static;
-  type Error: Serialize + 'static;
+  type Object: Serialize + 'static + Send;
+  type Error: Serialize + 'static + Send;
 
   fn list(&self) -> BoxFuture<Vec<Self::Object>, Self::Error>;
   fn obj(&self) -> BoxFuture<Self::Object, Self::Error>;
+
+  fn resp(&self, obj: Vec<Self::Object>) -> BoxFuture<Vec<Self::Object>, Self::Error> {
+    finished::<Vec<Self::Object>, Self::Error>(obj).boxed()
+  }
 
   fn serve(self) -> ResourceServer<Self> {
     ResourceServer{

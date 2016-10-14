@@ -2,10 +2,15 @@
 
 A web framework for APIs in Rust.
 
-- TODO Tokio
-
 - [ ] rename `Resource` to something better (not `Service`, with Tokio that's confusing)
-- [ ] websockets with `ws-rs`
+- [ ] add request and response structs
+- [ ] add proper `find`, `get`, `create`, `update`, `patch`, `remove` (`setup`?) with `Vec<Self::Object>` results
+- [ ] add hooks/filters
+- [ ] Add `DatabaseResource` that just accepts a Diesel object/db connection and automatically becomes a full resource.
+- [ ] websocket serving with `ws-rs`
+- [ ] add messagepack serialization
+- [ ] write JS library (backtalk.js) for frontend to talk to Backtalk
+- [ ] upgrade to Hyper proper once it integrates with Tokio
 
 ## Objects
 

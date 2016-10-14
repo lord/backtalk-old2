@@ -14,6 +14,13 @@ impl Resource for MyResource {
   type Object = HashMap<String, String>;
   type Error = String;
 
+  fn list(&self) -> BoxFuture<Vec<Self::Object>, Self::Error> {
+    let mut map = HashMap::new();
+    map.insert("test".to_string(), "blah".to_string());
+    let v = vec![map];
+    finished::<Vec<Self::Object>, Self::Error>(v).boxed()
+  }
+
   fn obj(&self) -> BoxFuture<Self::Object, Self::Error> {
     let mut map = HashMap::new();
     map.insert("test".to_string(), "blah".to_string());

@@ -13,6 +13,7 @@ pub trait Resource: Sized {
   type Object: Serialize + 'static;
   type Error: Serialize + 'static;
 
+  fn list(&self) -> BoxFuture<Vec<Self::Object>, Self::Error>;
   fn obj(&self) -> BoxFuture<Self::Object, Self::Error>;
 
   fn serve(self) -> ResourceServer<Self> {
@@ -31,7 +32,7 @@ impl <T: Resource> Service for ResourceServer<T> {
     fn call(&self, req: Self::Request) -> Self::Future {
         println!("REQUEST: {:?}", req);
 
-        self.resource.obj().then(|res| {
+        self.resource.list().then(|res| {
           let resp_string = match res {
             // TODO GET RID OF UNWRAPS
             Ok(i) => serde_json::to_string(&i).unwrap(),

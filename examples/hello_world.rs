@@ -1,7 +1,7 @@
 extern crate backtalk;
 extern crate tokio_hyper as http;
 
-use backtalk::service::Resource;
+use backtalk::resource::Resource;
 use std::time::Duration;
 use std::thread;
 
@@ -15,7 +15,7 @@ impl Resource for MyResource {
 
 fn main() {
     http::Server::new()
-        .serve(|| MyResource{}.serve())
+        .serve(|| MyResource.serve())
         .unwrap();
 
     thread::sleep(Duration::from_secs(1_000_000));

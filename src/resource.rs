@@ -1,6 +1,8 @@
 use http;
+use serde::Serialize;
+use serde_json;
 use tokio_service::Service;
-use futures::{Future, BoxFuture, finished, Async};
+use futures::{Future, BoxFuture, Async};
 
 // #[derive(Clone)]
 pub struct ResourceServer<T: Resource> {
@@ -8,7 +10,10 @@ pub struct ResourceServer<T: Resource> {
 }
 
 pub trait Resource: Sized {
-  fn text(&self) -> String;
+  type Object: Serialize + 'static;
+  type Error: Serialize + 'static;
+
+  fn obj(&self) -> BoxFuture<Self::Object, Self::Error>;
 
   fn serve(self) -> ResourceServer<Self> {
     ResourceServer{
@@ -26,16 +31,19 @@ impl <T: Resource> Service for ResourceServer<T> {
     fn call(&self, req: Self::Request) -> Self::Future {
         println!("REQUEST: {:?}", req);
 
-        // Create the HTTP response with the body
-        let resp = http::Message::new(http::Response::ok())
-            .with_body(self.resource.text().into_bytes());
+        self.resource.obj().then(|res| {
+          let resp_string = match res {
+            // TODO GET RID OF UNWRAPS
+            Ok(i) => serde_json::to_string(&i).unwrap(),
+            Err(i) => serde_json::to_string(&i).unwrap(),
+          };
 
-        // Return the response as an immediate future
-        finished(resp).boxed()
+          // Create the HTTP response with the body
+          Ok(http::Message::new(http::Response::ok()).with_body(resp_string.into_bytes()))
+        }).boxed()
     }
 
     fn poll_ready(&self) -> Async<()> {
         Async::Ready(())
     }
 }
-

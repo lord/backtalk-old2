@@ -11,6 +11,7 @@ A web framework for APIs in Rust.
 - [ ] add messagepack serialization
 - [ ] write JS library (backtalk.js) for frontend to talk to Backtalk
 - [ ] upgrade to Hyper proper once it integrates with Tokio
+- [ ] Remove all unwraps
 
 ## Objects
 

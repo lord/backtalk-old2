@@ -7,14 +7,14 @@ use ::params::Params;
 use hyper;
 
 // #[derive(Clone)]
-pub struct ResourceServer<T: Resource> {
-  resource: T,
+pub struct Server {
+  resource: Box<ResourceWrapper>,
 }
 
 pub type Reply<T: Resource> = BoxFuture<T::Object, T::Error>;
 pub type ListReply<T: Resource> = BoxFuture<Vec<T::Object>, T::Error>;
 
-pub trait Resource: Sized {
+pub trait Resource: Sized + 'static + Send {
   type Object: Serialize + Deserialize + 'static + Send;
   type Error: Serialize + Deserialize + 'static + Send;
   type Id: Serialize + Deserialize + 'static + Send;
@@ -30,20 +30,15 @@ pub trait Resource: Sized {
     finished::<Vec<Self::Object>, Self::Error>(obj).boxed()
   }
 
-  fn serve(self) -> ResourceServer<Self> {
-    ResourceServer{
-      resource: self,
+  fn into_server(self) -> Server {
+    Server{
+      resource: Box::new(self),
     }
   }
 }
 
-impl <T: Resource> Service for ResourceServer<T> {
-    type Request = http::Message<http::Request>;
-    type Response = http::Message<http::Response>;
-    type Error = http::Error;
-    type Future = BoxFuture<Self::Response, http::Error>;
-
-    fn call(&self, req: Self::Request) -> Self::Future {
+impl <T: Resource + Send> ResourceWrapper for T {
+  fn handle(&self, req: http::Message<http::Request>) -> BoxFuture<http::Message<http::Response>, http::Error> {
       let (head, body_buf) = req.deconstruct();
       let body_string = String::from_utf8(body_buf).expect("meow2");
       let mut uri = if let &hyper::uri::RequestUri::AbsolutePath{ref path, ref query} = head.uri() {
@@ -70,7 +65,7 @@ impl <T: Resource> Service for ResourceServer<T> {
 
       // let body = serde_json::from_str<T::Object>(&body_string);
 
-      self.resource.find(&::params::new()).then(|res| {
+      self.find(&::params::new()).then(|res| {
         let resp_string = match res {
           Ok(i) => serde_json::to_string(&i).unwrap(),
           Err(i) => serde_json::to_string(&i).unwrap(),
@@ -79,6 +74,21 @@ impl <T: Resource> Service for ResourceServer<T> {
         // Create the HTTP response with the body
         Ok(http::Message::new(http::Response::ok()).with_body(resp_string.into_bytes()))
       }).boxed()
+  }
+}
+
+trait ResourceWrapper: Send {
+    fn handle(&self, http::Message<http::Request>) -> BoxFuture<http::Message<http::Response>, http::Error>;
+}
+
+impl Service for Server {
+    type Request = http::Message<http::Request>;
+    type Response = http::Message<http::Response>;
+    type Error = http::Error;
+    type Future = BoxFuture<Self::Response, http::Error>;
+
+    fn call(&self, req: Self::Request) -> Self::Future {
+      self.resource.handle(req)
     }
 
     fn poll_ready(&self) -> Async<()> {

@@ -45,7 +45,7 @@ impl Resource for MyResource {
 
 fn main() {
     http::Server::new()
-        .serve(|| MyResource.serve())
+        .serve(|| MyResource.into_server())
         .unwrap();
 
     thread::sleep(Duration::from_secs(1_000_000));

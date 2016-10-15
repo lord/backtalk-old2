@@ -7,9 +7,10 @@ extern crate tokio_hyper as http;
 
 mod resource;
 mod params;
+mod server;
 
 pub use resource::Resource;
-pub use resource::Server;
+pub use server::Server;
 pub use resource::Reply;
 pub use resource::ListReply;
 pub use params::Params;

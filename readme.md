@@ -6,6 +6,7 @@ A web framework for APIs in Rust.
 - [x] add request and response structs
 - [ ] multiple resources per resource server
 - [ ] custom error handlers for server
+- [ ] ResourceWrapper.handle should accept a Serializer and use that instead of serde_json every time
 - [ ] call resource methods properly based on what was called
 - [ ] add hooks/filters
 - [ ] Add `DatabaseResource` that just accepts a Diesel object/db connection and automatically becomes a full resource.

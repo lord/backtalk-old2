@@ -88,7 +88,7 @@ impl <T: Resource + Send> ResourceWrapper for T {
   fn handle(&self, id_str: Option<&str>) -> BoxFuture<http::Message<http::Response>, http::Error> {
       // let path = Url::parse(uri).expect("MEOW3");
 
-      self.find(&::params::new()).then(|res| {
+      self.find(&::params::Params::new()).then(|res| {
         let resp_string = match res {
           Ok(i) => serde_json::to_string(&i).unwrap(),
           Err(i) => serde_json::to_string(&i).unwrap(),

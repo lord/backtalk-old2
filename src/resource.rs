@@ -25,7 +25,7 @@ pub trait Resource: Sized + 'static + Send {
 }
 
 impl <T: Resource + Send> ResourceWrapper for T {
-  fn handle(&self, id_str: Option<&str>) -> BoxFuture<http::Message<http::Response>, http::Error> {
+  fn handle(&self, id_str: Option<&str>, body: Option<&str>) -> BoxFuture<http::Message<http::Response>, http::Error> {
       // let path = Url::parse(uri).expect("MEOW3");
 
       self.find(&::params::Params::new()).then(|res| {
@@ -41,5 +41,5 @@ impl <T: Resource + Send> ResourceWrapper for T {
 }
 
 pub trait ResourceWrapper: Send + 'static {
-    fn handle(&self, Option<&str>) -> BoxFuture<http::Message<http::Response>, http::Error>;
+    fn handle(&self, Option<&str>, Option<&str>) -> BoxFuture<http::Message<http::Response>, http::Error>;
 }

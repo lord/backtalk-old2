@@ -42,7 +42,7 @@ impl Service for Server {
       let resource_id = uri.next();
 
       match self.resources.get(resource_name) {
-          Some(resource) => resource.handle(resource_id),
+          Some(resource) => resource.handle(resource_id, Some(&body_string)),
           None => panic!("no resource with that name"),
       }
 

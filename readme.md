@@ -5,6 +5,7 @@ A web framework for APIs in Rust.
 - [x] add proper `find`, `get`, `create`, `update`, `patch`, `remove` (`setup`?) with `Vec<Self::Object>` results
 - [x] add request and response structs
 - [ ] multiple resources per resource server
+- [ ] custom error handlers for server
 - [ ] call resource methods properly based on what was called
 - [ ] add hooks/filters
 - [ ] Add `DatabaseResource` that just accepts a Diesel object/db connection and automatically becomes a full resource.

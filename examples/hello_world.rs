@@ -3,7 +3,7 @@ extern crate futures;
 extern crate tokio_hyper as http;
 
 use std::collections::HashMap;
-use backtalk::resource::{Resource, Reply, ListReply};
+use backtalk::resource::{Resource, Reply, ListReply, Server};
 use backtalk::params::Params;
 use std::time::Duration;
 use std::thread;
@@ -45,7 +45,11 @@ impl Resource for MyResource {
 
 fn main() {
     http::Server::new()
-        .serve(|| MyResource.into_server())
+        .serve(|| {
+          let mut srv = Server::new();
+          srv.resource("test", MyResource);
+          srv
+        })
         .unwrap();
 
     thread::sleep(Duration::from_secs(1_000_000));

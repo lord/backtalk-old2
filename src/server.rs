@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use ::resource::ResourceWrapper;
 use tokio_service::Service;
 use futures::{BoxFuture, Async};
+use ::params::Params;
 
 // #[derive(Clone)]
 pub struct Server {
@@ -42,7 +43,7 @@ impl Service for Server {
       let resource_id = uri.next();
 
       match self.resources.get(resource_name) {
-          Some(resource) => resource.handle(resource_id, Some(&body_string)),
+          Some(resource) => resource.handle(&Params::new(), resource_id, Some(&body_string)),
           None => panic!("no resource with that name"),
       }
 

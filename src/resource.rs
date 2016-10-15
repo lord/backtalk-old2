@@ -25,10 +25,10 @@ pub trait Resource: Sized + 'static + Send {
 }
 
 impl <T: Resource + Send> ResourceWrapper for T {
-  fn handle(&self, id_str: Option<&str>, body: Option<&str>) -> BoxFuture<http::Message<http::Response>, http::Error> {
+  fn handle(&self, params: &Params, id_str: Option<&str>, body: Option<&str>) -> BoxFuture<http::Message<http::Response>, http::Error> {
       // let path = Url::parse(uri).expect("MEOW3");
 
-      self.find(&::params::Params::new()).then(|res| {
+      self.find(params).then(|res| {
         let resp_string = match res {
           Ok(i) => serde_json::to_string(&i).unwrap(),
           Err(i) => serde_json::to_string(&i).unwrap(),
@@ -41,5 +41,5 @@ impl <T: Resource + Send> ResourceWrapper for T {
 }
 
 pub trait ResourceWrapper: Send + 'static {
-    fn handle(&self, Option<&str>, Option<&str>) -> BoxFuture<http::Message<http::Response>, http::Error>;
+    fn handle(&self, &Params, Option<&str>, Option<&str>) -> BoxFuture<http::Message<http::Response>, http::Error>;
 }

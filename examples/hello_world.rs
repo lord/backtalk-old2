@@ -3,8 +3,7 @@ extern crate futures;
 extern crate tokio_hyper as http;
 
 use std::collections::HashMap;
-use backtalk::resource::{Resource, Reply, ListReply, Server};
-use backtalk::params::Params;
+use backtalk::{Resource, Reply, ListReply, Server, Params};
 use std::time::Duration;
 use std::thread;
 use futures::{Future, finished};

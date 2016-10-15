@@ -4,6 +4,7 @@ use serde_json;
 use tokio_service::Service;
 use futures::{finished, Future, BoxFuture, Async};
 use ::params::Params;
+use hyper;
 
 // #[derive(Clone)]
 pub struct ResourceServer<T: Resource> {
@@ -43,13 +44,29 @@ impl <T: Resource> Service for ResourceServer<T> {
     type Future = BoxFuture<Self::Response, http::Error>;
 
     fn call(&self, req: Self::Request) -> Self::Future {
-      // let (head, body_buf) = req.deconstruct();
-      // let body_string = String::from_utf8(body_buf).unwrap();
-      // let uri = if let AbsolutePath(path) = head.uri() {
-      //   path
-      // } else {
-      //   panic!()
-      // };
+      let (head, body_buf) = req.deconstruct();
+      let body_string = String::from_utf8(body_buf).expect("meow2");
+      let mut uri = if let &hyper::uri::RequestUri::AbsolutePath{ref path, ref query} = head.uri() {
+        path.split('/').skip(1)
+      } else {
+        // TODO DEAL WITH THIS
+        panic!("wasn't absolute path")
+      };
+
+      let resource_name = uri.next().unwrap(); // difficult to break this since split always returns at least ""
+      let resource_id = uri.next();
+
+      println!("name: {:?}, id: {:?}", resource_name, resource_id);
+
+      // let path = Url::parse(uri).expect("MEOW3");
+
+      // parse query string
+      // check first part of URL and route to approprate resource
+      // check second part of URL and set ID if approprate
+      // if other parts of URL, BAD REQUEST
+      // check HTTP method and route to approprate method based on this and ID
+        // parse body for create/update/patch if present into Resource::Object
+        // call approprate method on the
 
       // let body = serde_json::from_str<T::Object>(&body_string);
 

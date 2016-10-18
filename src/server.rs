@@ -5,21 +5,29 @@ use ::resource::ResourceWrapper;
 use tokio_service::Service;
 use futures::{BoxFuture, Async};
 use ::params::Params;
+use ::ErrorHandler;
+use ::error;
 
 // #[derive(Clone)]
 pub struct Server {
   resources: HashMap<String, Box<ResourceWrapper>>,
+  error_handler: Box<ErrorHandler>,
 }
 
 impl Server {
   pub fn new() -> Server {
     Server {
-      resources: HashMap::new()
+      resources: HashMap::new(),
+      error_handler: Box::new(error::DefaultErrorHandler),
     }
   }
 
   pub fn resource<T: ResourceWrapper>(&mut self, name: &str, resource: T) {
     self.resources.insert(name.to_string(), Box::new(resource));
+  }
+
+  pub fn error<T: ErrorHandler>(&mut self, handler: T) {
+    self.error_handler = Box::new(handler);
   }
 }
 
@@ -35,8 +43,7 @@ impl Service for Server {
       let mut uri = if let &hyper::uri::RequestUri::AbsolutePath{ref path, ref query} = head.uri() {
         path.split('/').skip(1)
       } else {
-        // TODO DEAL WITH THIS
-        panic!("wasn't absolute path")
+        return self.error_handler.handle();
       };
 
       let resource_name = uri.next().unwrap(); // difficult to break this since split always returns at least ""
@@ -44,7 +51,7 @@ impl Service for Server {
 
       match self.resources.get(resource_name) {
           Some(resource) => resource.handle(&Params::new(), resource_id, Some(&body_string)),
-          None => panic!("no resource with that name"),
+          None => return self.error_handler.handle(),
       }
 
       // parse query string

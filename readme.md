@@ -1,4 +1,8 @@
-# Backtalk
+<p align="center">
+  <img src="https://raw.githubusercontent.com/lord/img/master/logo-backtalk.png" alt="Backtalk: API Web Server" width="226">
+  <br>
+  <a href="https://travis-ci.org/lord/slate"><img src="https://travis-ci.org/lord/backtalk.svg?branch=master" alt="Build Status"></a>
+</p>
 
 A web framework for APIs in Rust.
 

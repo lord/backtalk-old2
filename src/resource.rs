@@ -3,7 +3,6 @@ use serde_json;
 use futures::{finished, Future, BoxFuture};
 use ::params::Params;
 use ::Request;
-use ::Value;
 use serde_json::value::from_value;
 use http;
 

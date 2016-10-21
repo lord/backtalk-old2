@@ -4,7 +4,6 @@ use std::collections::HashMap;
 use ::resource::ResourceWrapper;
 use tokio_service::Service;
 use futures::{BoxFuture, Async};
-use ::params::Params;
 use ::ErrorHandler;
 use ::error;
 use ::Value;

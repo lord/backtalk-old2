@@ -9,6 +9,7 @@ A web framework for APIs in Rust.
 - [x] call resource methods properly based on what was called
 - [ ] add hooks/filters
 - [ ] Add `DatabaseResource` that just accepts a Diesel object/db connection and automatically becomes a full resource.
+- [ ] parse query string properly
 - [ ] `handle` should return a string and accept a serializer
 - [ ] websocket serving with `ws-rs`
 - [ ] write JS library (backtalk.js) for frontend to talk to Backtalk

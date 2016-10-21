@@ -53,7 +53,19 @@ impl Service for Server {
       };
 
       let resource_name = uri.next().unwrap(); // difficult to break this since split always returns at least ""
-      let resource_id = uri.next();
+      let resource_id = if let Some(resource_id) = uri.next() {
+        if resource_id.is_empty() {
+          None
+        } else {
+          match serde_json::from_str::<Value>(&resource_id) {
+            Ok(val) => Some(val),
+            Err(_) => return self.error_handler.handle(),
+          }
+        }
+      } else {
+        None
+      };
+
       let body_val = if body_string.is_empty() {
         None
       } else {
@@ -63,14 +75,71 @@ impl Service for Server {
         })
       };
 
-      let req = Request::Find{
-        params: ::Params::new(),
+      let resource = match self.resources.get(resource_name) {
+          Some(resource) => resource,
+          None => return self.error_handler.handle(),
       };
 
-      match self.resources.get(resource_name) {
-          Some(resource) => resource.handle(req),
-          None => return self.error_handler.handle(),
-      }
+      let params = ::Params::new();
+
+      let req = match head.method() {
+        // TODO should we handle HEAD requests?
+        &hyper::method::Method::Get => {
+          if let Some(rid) = resource_id {
+            Request::Get{
+              params: params,
+              id: rid,
+            }
+          } else {
+            Request::Find{params: params}
+          }
+        }
+        &hyper::method::Method::Post => {
+          if let Some(body) = body_val {
+            Request::Create{
+              params: params,
+              object: body,
+            }
+          } else {
+            return self.error_handler.handle();
+          }
+        }
+        &hyper::method::Method::Put => {
+          if let (Some(rid), Some(body)) = (resource_id, body_val) {
+            Request::Update{
+              params: params,
+              id: rid,
+              object: body,
+            }
+          } else {
+            return self.error_handler.handle();
+          }
+        }
+        &hyper::method::Method::Patch => {
+          if let (Some(rid), Some(body)) = (resource_id, body_val) {
+            Request::Patch{
+              params: params,
+              id: rid,
+              object: body,
+            }
+          } else {
+            return self.error_handler.handle();
+          }
+        }
+        &hyper::method::Method::Delete => {
+          if let Some(rid) = resource_id {
+            Request::Remove{
+              params: params,
+              id: rid,
+            }
+          } else {
+            return self.error_handler.handle();
+          }
+        }
+        _ => return self.error_handler.handle(),
+      };
+
+      resource.handle(req)
 
       // parse query string
       // check first part of URL and route to approprate resource

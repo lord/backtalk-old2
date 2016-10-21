@@ -105,8 +105,6 @@ impl Service for Server {
         object: body_val,
       };
 
-      println!("{:?}", req);
-
       if !req.validate() {
         return self.error_handler.handle("Invalid request, missing either a body or id or something.")
       }

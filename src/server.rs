@@ -7,6 +7,7 @@ use futures::{BoxFuture, Async};
 use ::params::Params;
 use ::ErrorHandler;
 use ::error;
+use ::Value;
 
 // #[derive(Clone)]
 pub struct Server {
@@ -39,7 +40,10 @@ impl Service for Server {
 
     fn call(&self, req: Self::Request) -> Self::Future {
       let (head, body_buf) = req.deconstruct();
-      let body_string = String::from_utf8(body_buf).expect("meow2");
+      let body_string = match String::from_utf8(body_buf) {
+        Ok(val) => val,
+        Err(_) => return self.error_handler.handle(),
+      };
       let mut uri = if let &hyper::uri::RequestUri::AbsolutePath{ref path, ref query} = head.uri() {
         path.split('/').skip(1)
       } else {
@@ -48,6 +52,14 @@ impl Service for Server {
 
       let resource_name = uri.next().unwrap(); // difficult to break this since split always returns at least ""
       let resource_id = uri.next();
+      let body_val = if (body_string.is_empty()) {
+        None
+      } else {
+        Some(match serde_json::from_str::<Value>(&body_string) {
+          Ok(val) => val,
+          Err(_) => return self.error_handler.handle(),
+        })
+      };
 
       match self.resources.get(resource_name) {
           Some(resource) => resource.handle(&Params::new(), resource_id, Some(&body_string)),

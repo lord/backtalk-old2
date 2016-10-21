@@ -9,10 +9,13 @@ mod resource;
 mod params;
 mod error;
 mod server;
+mod request;
 
+pub use request::Request;
 pub use resource::Resource;
 pub use error::ErrorHandler;
 pub use server::Server;
 pub use resource::Reply;
 pub use resource::ListReply;
 pub use params::Params;
+pub use serde_json::Value;

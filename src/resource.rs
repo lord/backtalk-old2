@@ -32,32 +32,34 @@ pub trait Resource: Sized + 'static + Send {
   fn resp(&self, obj: Vec<Self::Object>) -> ListReply<Self> {
     finished::<Vec<Self::Object>, Self::Error>(obj).boxed()
   }
+}
 
-  fn route(&self, r: Request) -> BoxFuture<http::Message<http::Response>, http::Error> {
+impl <T: Resource + Send> ResourceWrapper for T {
+  fn handle(&self, r: Request) -> BoxFuture<http::Message<http::Response>, http::Error> {
     let prom = match r {
       Request::Find{params} => {
         self.find(&params).then(serialize_result).boxed()
       }
       Request::Get{params, id} => {
-        let id_struct = from_value::<Self::Id>(id).unwrap();
+        let id_struct = from_value::<T::Id>(id).unwrap();
         self.get(&id_struct, &params).then(serialize_result).boxed()
       }
       Request::Create{params, object} => {
-        let obj_struct = from_value::<Self::Object>(object).unwrap();
+        let obj_struct = from_value::<T::Object>(object).unwrap();
         self.create(&obj_struct, &params).then(serialize_result).boxed()
       }
       Request::Update{params, id, object} => {
-        let id_struct = from_value::<Self::Id>(id).unwrap();
-        let obj_struct = from_value::<Self::Object>(object).unwrap();
+        let id_struct = from_value::<T::Id>(id).unwrap();
+        let obj_struct = from_value::<T::Object>(object).unwrap();
         self.update(&id_struct, &obj_struct, &params).then(serialize_result).boxed()
       }
       Request::Patch{params, id, object} => {
-        let id_struct = from_value::<Self::Id>(id).unwrap();
-        let obj_struct = from_value::<Self::Object>(object).unwrap();
+        let id_struct = from_value::<T::Id>(id).unwrap();
+        let obj_struct = from_value::<T::Object>(object).unwrap();
         self.patch(&id_struct, &obj_struct, &params).then(serialize_result).boxed()
       }
       Request::Remove{params, id} => {
-        self.remove(&from_value::<Self::Id>(id).unwrap(), &params).then(serialize_result).boxed()
+        self.remove(&from_value::<T::Id>(id).unwrap(), &params).then(serialize_result).boxed()
       }
     };
     prom.then(|res| {
@@ -66,12 +68,6 @@ pub trait Resource: Sized + 'static + Send {
         Err(resp_string) => Ok(http::Message::new(http::Response::ok()).with_body(resp_string.into_bytes())),
       }
     }).boxed()
-  }
-}
-
-impl <T: Resource + Send> ResourceWrapper for T {
-  fn handle(&self, r: Request) -> BoxFuture<http::Message<http::Response>, http::Error> {
-    self.route(r)
   }
 }
 

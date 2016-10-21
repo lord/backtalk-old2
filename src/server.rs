@@ -8,6 +8,8 @@ use ::params::Params;
 use ::ErrorHandler;
 use ::error;
 use ::Value;
+use ::Request;
+use serde_json;
 
 // #[derive(Clone)]
 pub struct Server {
@@ -52,7 +54,7 @@ impl Service for Server {
 
       let resource_name = uri.next().unwrap(); // difficult to break this since split always returns at least ""
       let resource_id = uri.next();
-      let body_val = if (body_string.is_empty()) {
+      let body_val = if body_string.is_empty() {
         None
       } else {
         Some(match serde_json::from_str::<Value>(&body_string) {
@@ -61,8 +63,12 @@ impl Service for Server {
         })
       };
 
+      let req = Request::Find{
+        params: ::Params::new(),
+      };
+
       match self.resources.get(resource_name) {
-          Some(resource) => resource.handle(&Params::new(), resource_id, Some(&body_string)),
+          Some(resource) => resource.handle(req),
           None => return self.error_handler.handle(),
       }
 

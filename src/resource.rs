@@ -2,10 +2,20 @@ use serde::{Serialize, Deserialize};
 use serde_json;
 use futures::{finished, Future, BoxFuture};
 use ::params::Params;
+use ::Request;
+use ::Value;
+use serde_json::value::from_value;
 use http;
 
 pub type Reply<T: Resource> = BoxFuture<T::Object, T::Error>;
 pub type ListReply<T: Resource> = BoxFuture<Vec<T::Object>, T::Error>;
+
+fn serialize_result<A: Serialize, B: Serialize>(r: Result<A, B>) -> Result<String,String> {
+  match r {
+    Ok(i) => Ok(serde_json::to_string(&i).unwrap()),
+    Err(i) => Err(serde_json::to_string(&i).unwrap()),
+  }
+}
 
 pub trait Resource: Sized + 'static + Send {
   type Object: Serialize + Deserialize + 'static + Send;
@@ -22,24 +32,49 @@ pub trait Resource: Sized + 'static + Send {
   fn resp(&self, obj: Vec<Self::Object>) -> ListReply<Self> {
     finished::<Vec<Self::Object>, Self::Error>(obj).boxed()
   }
+
+  fn route(&self, r: Request) -> BoxFuture<http::Message<http::Response>, http::Error> {
+    let prom = match r {
+      Request::Find{params} => {
+        self.find(&params).then(serialize_result).boxed()
+      }
+      Request::Get{params, id} => {
+        let id_struct = from_value::<Self::Id>(id).unwrap();
+        self.get(&id_struct, &params).then(serialize_result).boxed()
+      }
+      Request::Create{params, object} => {
+        let obj_struct = from_value::<Self::Object>(object).unwrap();
+        self.create(&obj_struct, &params).then(serialize_result).boxed()
+      }
+      Request::Update{params, id, object} => {
+        let id_struct = from_value::<Self::Id>(id).unwrap();
+        let obj_struct = from_value::<Self::Object>(object).unwrap();
+        self.update(&id_struct, &obj_struct, &params).then(serialize_result).boxed()
+      }
+      Request::Patch{params, id, object} => {
+        let id_struct = from_value::<Self::Id>(id).unwrap();
+        let obj_struct = from_value::<Self::Object>(object).unwrap();
+        self.patch(&id_struct, &obj_struct, &params).then(serialize_result).boxed()
+      }
+      Request::Remove{params, id} => {
+        self.remove(&from_value::<Self::Id>(id).unwrap(), &params).then(serialize_result).boxed()
+      }
+    };
+    prom.then(|res| {
+      match res {
+        Ok(resp_string) => Ok(http::Message::new(http::Response::ok()).with_body(resp_string.into_bytes())),
+        Err(resp_string) => Ok(http::Message::new(http::Response::ok()).with_body(resp_string.into_bytes())),
+      }
+    }).boxed()
+  }
 }
 
 impl <T: Resource + Send> ResourceWrapper for T {
-  fn handle(&self, params: &Params, id_str: Option<&str>, body: Option<&str>) -> BoxFuture<http::Message<http::Response>, http::Error> {
-      // let path = Url::parse(uri).expect("MEOW3");
-
-      self.find(params).then(|res| {
-        let resp_string = match res {
-          Ok(i) => serde_json::to_string(&i).unwrap(),
-          Err(i) => serde_json::to_string(&i).unwrap(),
-        };
-
-        // Create the HTTP response with the body
-        Ok(http::Message::new(http::Response::ok()).with_body(resp_string.into_bytes()))
-      }).boxed()
+  fn handle(&self, r: Request) -> BoxFuture<http::Message<http::Response>, http::Error> {
+    self.route(r)
   }
 }
 
 pub trait ResourceWrapper: Send + 'static {
-    fn handle(&self, &Params, Option<&str>, Option<&str>) -> BoxFuture<http::Message<http::Response>, http::Error>;
+    fn handle(&self, Request) -> BoxFuture<http::Message<http::Response>, http::Error>;
 }

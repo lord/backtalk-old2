@@ -44,12 +44,12 @@ impl Service for Server {
       let (head, body_buf) = req.deconstruct();
       let body_string = match String::from_utf8(body_buf) {
         Ok(val) => val,
-        Err(_) => return self.error_handler.handle(),
+        Err(_) => return self.error_handler.handle("Invalid utf8 in request body."),
       };
       let mut uri = if let &hyper::uri::RequestUri::AbsolutePath{ref path, ref query} = head.uri() {
         path.split('/').skip(1)
       } else {
-        return self.error_handler.handle();
+        return self.error_handler.handle("Invalid request path.");
       };
 
       let resource_name = uri.next().unwrap(); // difficult to break this since split always returns at least ""
@@ -59,7 +59,7 @@ impl Service for Server {
         } else {
           match serde_json::from_str::<Value>(&resource_id) {
             Ok(val) => Some(val),
-            Err(_) => return self.error_handler.handle(),
+            Err(_) => return self.error_handler.handle("Invalid JSON in id field"),
           }
         }
       } else {
@@ -71,13 +71,13 @@ impl Service for Server {
       } else {
         Some(match serde_json::from_str::<Value>(&body_string) {
           Ok(val) => val,
-          Err(_) => return self.error_handler.handle(),
+          Err(_) => return self.error_handler.handle("Invalid JSON in request body"),
         })
       };
 
       let resource = match self.resources.get(resource_name) {
           Some(resource) => resource,
-          None => return self.error_handler.handle(),
+          None => return self.error_handler.handle("No resource with that name known."),
       };
 
       let params = ::Params::new();
@@ -101,7 +101,7 @@ impl Service for Server {
               object: body,
             }
           } else {
-            return self.error_handler.handle();
+            return self.error_handler.handle("Missing body.");
           }
         }
         &hyper::method::Method::Put => {
@@ -112,7 +112,7 @@ impl Service for Server {
               object: body,
             }
           } else {
-            return self.error_handler.handle();
+            return self.error_handler.handle("Missing resource id and/or body.");
           }
         }
         &hyper::method::Method::Patch => {
@@ -123,7 +123,7 @@ impl Service for Server {
               object: body,
             }
           } else {
-            return self.error_handler.handle();
+            return self.error_handler.handle("Missing resource id and/or body.");
           }
         }
         &hyper::method::Method::Delete => {
@@ -133,10 +133,10 @@ impl Service for Server {
               id: rid,
             }
           } else {
-            return self.error_handler.handle();
+            return self.error_handler.handle("Missing resource id");
           }
         }
-        _ => return self.error_handler.handle(),
+        _ => return self.error_handler.handle("We don't respond to that HTTP method, sorry."),
       };
 
       resource.handle(req)

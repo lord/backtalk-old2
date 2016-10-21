@@ -1,61 +1,55 @@
 use ::{Params, Value};
 
-pub enum Request {
-  Find {
-    params: Params,
-  },
-  Get {
-    params: Params,
-    id: Value,
-  },
-  Create {
-    params: Params,
-    object: Value,
-  },
-  Update {
-    params: Params,
-    id: Value,
-    object: Value,
-  },
-  Patch {
-    params: Params,
-    id: Value,
-    object: Value,
-  },
-  Remove {
-    params: Params,
-    id: Value,
-  },
+#[derive(Debug)]
+pub enum RequestType{
+  Find,
+  Get,
+  Create,
+  Update,
+  Patch,
+  Remove,
+}
+
+use RequestType::*;
+
+#[derive(Debug)]
+pub struct Request {
+  pub request_type: RequestType,
+  pub params: Params,
+  pub object: Option<Value>,
+  pub id: Option<Value>,
 }
 
 impl Request {
-  pub fn params(&mut self) -> &mut Params {
-    match self {
-      &mut Request::Find{ref mut params, ..} => params,
-      &mut Request::Get{ref mut params, ..} => params,
-      &mut Request::Create{ref mut params, ..} => params,
-      &mut Request::Update{ref mut params, ..} => params,
-      &mut Request::Patch{ref mut params, ..} => params,
-      &mut Request::Remove{ref mut params, ..} => params,
+  pub fn validate(&self) -> bool {
+    // check object field
+    match self.request_type {
+      Create | Update | Patch => {
+        if self.object == None {
+          return false;
+        }
+      },
+      _ => {
+        if self.object != None {
+          return false;
+        }
+      }
     }
-  }
 
-  pub fn id(&mut self) -> Option<&mut Value> {
-    match self {
-      &mut Request::Get{ref mut id, ..} => Some(id),
-      &mut Request::Update{ref mut id, ..} => Some(id),
-      &mut Request::Patch{ref mut id, ..} => Some(id),
-      &mut Request::Remove{ref mut id, ..} => Some(id),
-      _ => None,
+    // check id field
+    match self.request_type {
+      Get | Update | Patch | Remove => {
+        if self.id == None {
+          return false;
+        }
+      },
+      _ => {
+        if self.id != None {
+          return false;
+        }
+      }
     }
-  }
 
-  pub fn object(&mut self) -> Option<&mut Value> {
-    match self {
-      &mut Request::Create{ref mut object, ..} => Some(object),
-      &mut Request::Update{ref mut object, ..} => Some(object),
-      &mut Request::Patch{ref mut object, ..} => Some(object),
-      _ => None,
-    }
+    true
   }
 }

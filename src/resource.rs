@@ -3,6 +3,7 @@ use serde_json;
 use futures::{finished, Future, BoxFuture};
 use ::params::Params;
 use ::Request;
+use ::RequestType;
 use serde_json::value::from_value;
 use http;
 
@@ -34,32 +35,18 @@ pub trait Resource: Sized + 'static + Send {
 }
 
 impl <T: Resource + Send> ResourceWrapper for T {
+  // assumes r.validate() -> true
   fn handle(&self, r: Request) -> BoxFuture<http::Message<http::Response>, http::Error> {
-    let prom = match r {
-      Request::Find{params} => {
-        self.find(&params).then(serialize_result).boxed()
-      }
-      Request::Get{params, id} => {
-        let id_struct = from_value::<T::Id>(id).unwrap();
-        self.get(&id_struct, &params).then(serialize_result).boxed()
-      }
-      Request::Create{params, object} => {
-        let obj_struct = from_value::<T::Object>(object).unwrap();
-        self.create(&obj_struct, &params).then(serialize_result).boxed()
-      }
-      Request::Update{params, id, object} => {
-        let id_struct = from_value::<T::Id>(id).unwrap();
-        let obj_struct = from_value::<T::Object>(object).unwrap();
-        self.update(&id_struct, &obj_struct, &params).then(serialize_result).boxed()
-      }
-      Request::Patch{params, id, object} => {
-        let id_struct = from_value::<T::Id>(id).unwrap();
-        let obj_struct = from_value::<T::Object>(object).unwrap();
-        self.patch(&id_struct, &obj_struct, &params).then(serialize_result).boxed()
-      }
-      Request::Remove{params, id} => {
-        self.remove(&from_value::<T::Id>(id).unwrap(), &params).then(serialize_result).boxed()
-      }
+    let i = r.id.and_then(|v| from_value::<T::Id>(v).ok()); // TODO HANDLE DESERIALIZATION FAILURE
+    let o = r.object.and_then(|v| from_value::<T::Object>(v).ok()); // TODO HANDLE DESERIALIZATION FAILURE
+    let p = r.params;
+    let prom = match r.request_type {
+      RequestType::Find => self.find(&p).then(serialize_result).boxed(),
+      RequestType::Get => self.get(&i.unwrap(), &p).then(serialize_result).boxed(),
+      RequestType::Create => self.create(&o.unwrap(), &p).then(serialize_result).boxed(),
+      RequestType::Update => self.update(&i.unwrap(), &o.unwrap(), &p).then(serialize_result).boxed(),
+      RequestType::Patch => self.patch(&i.unwrap(), &o.unwrap(), &p).then(serialize_result).boxed(),
+      RequestType::Remove => self.remove(&i.unwrap(), &p).then(serialize_result).boxed(),
     };
     prom.then(|res| {
       match res {

@@ -8,6 +8,7 @@ use ::ErrorHandler;
 use ::error;
 use ::Value;
 use ::Request;
+use ::RequestType;
 use serde_json;
 
 // #[derive(Clone)]
@@ -79,76 +80,38 @@ impl Service for Server {
           None => return self.error_handler.handle("No resource with that name known."),
       };
 
-      let params = ::Params::new();
+      let params = ::Params::new(); // TODO ACTUALLY PARSE
 
-      let req = match head.method() {
+      let request_type = match head.method() {
         // TODO should we handle HEAD requests?
         &hyper::method::Method::Get => {
-          if let Some(rid) = resource_id {
-            Request::Get{
-              params: params,
-              id: rid,
-            }
+          if resource_id != None {
+            RequestType::Get
           } else {
-            Request::Find{params: params}
+            RequestType::Find
           }
         }
-        &hyper::method::Method::Post => {
-          if let Some(body) = body_val {
-            Request::Create{
-              params: params,
-              object: body,
-            }
-          } else {
-            return self.error_handler.handle("Missing body.");
-          }
-        }
-        &hyper::method::Method::Put => {
-          if let (Some(rid), Some(body)) = (resource_id, body_val) {
-            Request::Update{
-              params: params,
-              id: rid,
-              object: body,
-            }
-          } else {
-            return self.error_handler.handle("Missing resource id and/or body.");
-          }
-        }
-        &hyper::method::Method::Patch => {
-          if let (Some(rid), Some(body)) = (resource_id, body_val) {
-            Request::Patch{
-              params: params,
-              id: rid,
-              object: body,
-            }
-          } else {
-            return self.error_handler.handle("Missing resource id and/or body.");
-          }
-        }
-        &hyper::method::Method::Delete => {
-          if let Some(rid) = resource_id {
-            Request::Remove{
-              params: params,
-              id: rid,
-            }
-          } else {
-            return self.error_handler.handle("Missing resource id");
-          }
-        }
+        &hyper::method::Method::Post => RequestType::Create,
+        &hyper::method::Method::Put => RequestType::Update,
+        &hyper::method::Method::Patch => RequestType::Patch,
+        &hyper::method::Method::Delete => RequestType::Remove,
         _ => return self.error_handler.handle("We don't respond to that HTTP method, sorry."),
       };
 
+      let req = Request{
+        request_type: request_type,
+        params: params,
+        id: resource_id,
+        object: body_val,
+      };
+
+      println!("{:?}", req);
+
+      if !req.validate() {
+        return self.error_handler.handle("Invalid request, missing either a body or id or something.")
+      }
+
       resource.handle(req)
-
-      // parse query string
-      // check first part of URL and route to approprate resource
-      // check second part of URL and set ID if approprate
-      // if other parts of URL, BAD REQUEST
-      // check HTTP method and route to approprate method based on this and ID
-        // parse body for create/update/patch if present into Resource::Object
-        // call approprate method on the
-
-      // let body = serde_json::from_str<T::Object>(&body_string);
     }
 
     fn poll_ready(&self) -> Async<()> {

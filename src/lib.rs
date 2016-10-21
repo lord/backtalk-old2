@@ -13,6 +13,7 @@ mod request;
 mod filter;
 
 pub use request::Request;
+pub use request::RequestType;
 pub use resource::Resource;
 pub use error::ErrorHandler;
 pub use server::Server;

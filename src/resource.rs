@@ -35,8 +35,8 @@ pub trait Resource: Sized + 'static + Send {
 }
 
 impl <T: Resource + Send> ResourceWrapper for T {
-  // assumes r.validate() -> true
   fn handle(&self, r: Request) -> BoxFuture<http::Message<http::Response>, http::Error> {
+    // TODO return error unless r.validate() == true
     let i = r.id.and_then(|v| from_value::<T::Id>(v).ok()); // TODO HANDLE DESERIALIZATION FAILURE
     let o = r.object.and_then(|v| from_value::<T::Object>(v).ok()); // TODO HANDLE DESERIALIZATION FAILURE
     let p = r.params;

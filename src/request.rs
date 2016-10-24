@@ -1,6 +1,6 @@
 use ::{Params, Value};
 
-#[derive(Debug)]
+#[derive(Debug, Hash)]
 pub enum RequestType{
   Find,
   Get,

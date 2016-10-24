@@ -1,6 +1,6 @@
 use futures::BoxFuture;
 use ::{Request, ErrorHandler};
 
-pub trait Filter {
+pub trait Guard {
   fn handle(&self, Request) -> BoxFuture<Request, ErrorHandler>;
 }

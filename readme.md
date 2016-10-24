@@ -24,6 +24,6 @@ A web framework for APIs in Rust.
 
 - `Resource` is an object that receives requests. Usually corresponds to a particular type of object. Allows adding hooks and methods and error handlers.
 - `Request` is a request for data, either over HTTP or Websockets
-- `Response` is a response object representing JSON/BSON data that will be returned to the client
-- `Hook` is a function that accepts a Request and returns a HookResult.
-- `HookResult` is either an error or a modified request.
+- `Reply` is a response object representing JSON/BSON data that will be returned to the client, and a HTTP status (from a subset of subset of the messages)
+- `Guard` is a function that accepts a Request and returns a Future<Request, Reply>.
+- `Filter` is a function that accepts a Reply and returns a Future<Reply, Reply>.

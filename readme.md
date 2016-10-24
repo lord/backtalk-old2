@@ -11,7 +11,7 @@ A web framework for APIs in Rust.
 - [x] multiple resources per resource server
 - [x] custom error handlers for server
 - [x] call resource methods properly based on what was called
-- [ ] add hooks/filters
+- [ ] add guards (request->future<request,error> map) and filters (response->future<response,error> map)
 - [ ] Add `DatabaseResource` that just accepts a Diesel object/db connection and automatically becomes a full resource.
 - [ ] parse query string properly
 - [ ] `handle` should return a string and accept a serializer

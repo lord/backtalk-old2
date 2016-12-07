@@ -4,18 +4,18 @@ use std::collections::HashMap;
 use ::resource::ResourceWrapper;
 use tokio_service::Service;
 use futures::{BoxFuture, Future, finished};
-use ::Error;
-use ::Value;
-use ::Request;
-use ::RequestType;
+use ::{Error, Value, Request, RequestType};
 use serde_json;
 
-pub trait ErrorHandler: 'static + Send {
+pub trait ErrorHandler: 'static + Sync + Send {
   fn handle_http(&self, Error) -> BoxFuture<http::Response, hyper::Error>;
 }
 
-struct DefaultErrorHandler;
+pub trait ValueHandler: 'static + Sync + Send {
+  fn handle_http(&self, Value) -> BoxFuture<http::Response, hyper::Error>;
+}
 
+struct DefaultErrorHandler;
 impl ErrorHandler for DefaultErrorHandler {
   fn handle_http(&self, err: Error) -> BoxFuture<http::Response, hyper::Error> {
     let resp = http::Response::new().body(err.msg.into_bytes());
@@ -23,10 +23,20 @@ impl ErrorHandler for DefaultErrorHandler {
   }
 }
 
+struct DefaultValueHandler;
+impl ValueHandler for DefaultValueHandler {
+  fn handle_http(&self, val: Value) -> BoxFuture<http::Response, hyper::Error> {
+    let resp_body = serde_json::to_vec(&val).unwrap();
+    let http_resp = http::Response::new().body(resp_body);
+    finished(http_resp).boxed()
+  }
+}
+
 // #[derive(Clone)]
 pub struct Server {
   resources: HashMap<String, Box<ResourceWrapper>>,
   error_handler: Box<ErrorHandler>,
+  value_handler: Box<ValueHandler>,
 }
 
 impl Server {
@@ -34,6 +44,7 @@ impl Server {
     Server {
       resources: HashMap::new(),
       error_handler: Box::new(DefaultErrorHandler),
+      value_handler: Box::new(DefaultValueHandler),
     }
   }
 
@@ -141,7 +152,18 @@ impl Service for Server {
         })
       }
 
-      resource.handle(req)
+      // TODO actually use value and error handler
+      // let ref vh = self.value_handler;
+      // let ref eh = self.error_handler;
+
+      // problem is need to move value contained within Server, but passing it to the future
+      // means it can't get access
+      resource.handle(req).then(move |res| {
+        match res {
+          Ok(val) => DefaultValueHandler{}.handle_http(val),
+          Err(err) => DefaultErrorHandler{}.handle_http(err),
+        }
+      }).boxed()
     }
 }
 

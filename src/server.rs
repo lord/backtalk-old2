@@ -3,7 +3,7 @@ use hyper;
 use std::collections::HashMap;
 use ::resource::ResourceWrapper;
 use tokio_service::Service;
-use futures::{BoxFuture, Async, Future, finished};
+use futures::{BoxFuture, Future, finished};
 use ::Error;
 use ::Value;
 use ::Request;
@@ -53,7 +53,6 @@ impl Service for Server {
     type Future = BoxFuture<Self::Response, hyper::Error>;
 
     fn call(&self, req: Self::Request) -> Self::Future {
-      let path = req.path();
       // let body_string = match String::from_utf8(req.body().collect()) {
       //   Ok(val) => val,
       //   Err(_) => return self.error_handler.handle_http(Error {

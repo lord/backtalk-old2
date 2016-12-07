@@ -5,7 +5,8 @@ use ::params::Params;
 use ::Request;
 use ::RequestType;
 use serde_json::value::from_value;
-use http;
+use hyper;
+use hyper::server as http;
 
 pub type Reply<T: Resource> = BoxFuture<T::Object, T::Error>;
 pub type ListReply<T: Resource> = BoxFuture<Vec<T::Object>, T::Error>;
@@ -35,7 +36,7 @@ pub trait Resource: Sized + 'static + Send {
 }
 
 impl <T: Resource + Send> ResourceWrapper for T {
-  fn handle(&self, r: Request) -> BoxFuture<http::Message<http::Response>, http::Error> {
+  fn handle(&self, r: Request) -> BoxFuture<http::Response, hyper::Error> {
     // TODO return error unless r.validate() == true
     let i = r.id.and_then(|v| from_value::<T::Id>(v).ok()); // TODO HANDLE DESERIALIZATION FAILURE
     let o = r.object.and_then(|v| from_value::<T::Object>(v).ok()); // TODO HANDLE DESERIALIZATION FAILURE
@@ -50,13 +51,13 @@ impl <T: Resource + Send> ResourceWrapper for T {
     };
     prom.then(|res| {
       match res {
-        Ok(resp_string) => Ok(http::Message::new(http::Response::ok()).with_body(resp_string.into_bytes())),
-        Err(resp_string) => Ok(http::Message::new(http::Response::ok()).with_body(resp_string.into_bytes())),
+        Ok(resp_string) => Ok(http::Response::new().body(resp_string.into_bytes())),
+        Err(resp_string) => Ok(http::Response::new().body(resp_string.into_bytes())),
       }
     }).boxed()
   }
 }
 
 pub trait ResourceWrapper: Send + 'static {
-    fn handle(&self, Request) -> BoxFuture<http::Message<http::Response>, http::Error>;
+  fn handle(&self, Request) -> BoxFuture<http::Response, hyper::Error>;
 }

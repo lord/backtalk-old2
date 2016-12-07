@@ -1,4 +1,4 @@
-use http;
+use hyper::server as http;
 use hyper;
 use std::collections::HashMap;
 use ::resource::ResourceWrapper;
@@ -35,18 +35,18 @@ impl Server {
 }
 
 impl Service for Server {
-    type Request = http::Message<http::Request>;
-    type Response = http::Message<http::Response>;
-    type Error = http::Error;
-    type Future = BoxFuture<Self::Response, http::Error>;
+    type Request = http::Request;
+    type Response = http::Response;
+    type Error = hyper::Error;
+    type Future = BoxFuture<Self::Response, hyper::Error>;
 
     fn call(&self, req: Self::Request) -> Self::Future {
-      let (head, body_buf) = req.deconstruct();
-      let body_string = match String::from_utf8(body_buf) {
-        Ok(val) => val,
-        Err(_) => return self.error_handler.handle("Invalid utf8 in request body."),
-      };
-      let mut uri = if let &hyper::uri::RequestUri::AbsolutePath{ref path, ref query} = head.uri() {
+      let path = req.path();
+      // let body_string = match String::from_utf8(req.body().collect()) {
+      //   Ok(val) => val,
+      //   Err(_) => return self.error_handler.handle("Invalid utf8 in request body."),
+      // };
+      let mut uri = if let Some(path) = req.path() {
         path.split('/').skip(1)
       } else {
         return self.error_handler.handle("Invalid request path.");
@@ -66,14 +66,14 @@ impl Service for Server {
         None
       };
 
-      let body_val = if body_string.is_empty() {
-        None
-      } else {
-        Some(match serde_json::from_str::<Value>(&body_string) {
-          Ok(val) => val,
-          Err(_) => return self.error_handler.handle("Invalid JSON in request body"),
-        })
-      };
+      let body_val = None; // if body_string.is_empty() {
+      //   None
+      // } else {
+      //   Some(match serde_json::from_str::<Value>(&body_string) {
+      //     Ok(val) => val,
+      //     Err(_) => return self.error_handler.handle("Invalid JSON in request body"),
+      //   })
+      // };
 
       let resource = match self.resources.get(resource_name) {
           Some(resource) => resource,
@@ -82,19 +82,19 @@ impl Service for Server {
 
       let params = ::Params::new(); // TODO ACTUALLY PARSE
 
-      let request_type = match head.method() {
+      let request_type = match req.method() {
         // TODO should we handle HEAD requests?
-        &hyper::method::Method::Get => {
+        &hyper::Method::Get => {
           if resource_id != None {
             RequestType::Get
           } else {
             RequestType::Find
           }
         }
-        &hyper::method::Method::Post => RequestType::Create,
-        &hyper::method::Method::Put => RequestType::Update,
-        &hyper::method::Method::Patch => RequestType::Patch,
-        &hyper::method::Method::Delete => RequestType::Remove,
+        &hyper::Method::Post => RequestType::Create,
+        &hyper::Method::Put => RequestType::Update,
+        &hyper::Method::Patch => RequestType::Patch,
+        &hyper::Method::Delete => RequestType::Remove,
         _ => return self.error_handler.handle("We don't respond to that HTTP method, sorry."),
       };
 
@@ -110,10 +110,6 @@ impl Service for Server {
       }
 
       resource.handle(req)
-    }
-
-    fn poll_ready(&self) -> Async<()> {
-        Async::Ready(())
     }
 }
 

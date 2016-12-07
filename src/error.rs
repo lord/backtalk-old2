@@ -3,14 +3,25 @@ use hyper;
 use hyper::server as http;
 
 pub trait ErrorHandler: 'static + Send {
-  fn handle(&self, &str) -> BoxFuture<http::Response, hyper::Error>;
+  fn handle(&self, Error) -> BoxFuture<http::Response, hyper::Error>;
 }
 
 pub struct DefaultErrorHandler;
 
 impl ErrorHandler for DefaultErrorHandler {
-  fn handle(&self, s: &str) -> BoxFuture<http::Response, hyper::Error> {
-    let resp = http::Response::new().body(s.to_string().into_bytes());
+  fn handle(&self, err: Error) -> BoxFuture<http::Response, hyper::Error> {
+    let resp = http::Response::new().body(err.msg.into_bytes());
     finished(resp).boxed()
   }
+}
+
+pub struct Error {
+  pub kind: ErrorKind,
+  pub msg: String,
+}
+
+pub enum ErrorKind {
+  Forbidden,
+  NotFound,
+  RemoveThis,
 }

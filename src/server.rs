@@ -6,6 +6,7 @@ use tokio_service::Service;
 use futures::{BoxFuture, Async};
 use ::ErrorHandler;
 use ::error;
+use ::Error;
 use ::Value;
 use ::Request;
 use ::RequestType;
@@ -44,12 +45,18 @@ impl Service for Server {
       let path = req.path();
       // let body_string = match String::from_utf8(req.body().collect()) {
       //   Ok(val) => val,
-      //   Err(_) => return self.error_handler.handle("Invalid utf8 in request body."),
+      //   Err(_) => return self.error_handler.handle(Error {
+      //   msg: "Invalid utf8 in request body.".to_string(),
+      //   kind: ::error::ErrorKind::RemoveThis
+      // }),
       // };
       let mut uri = if let Some(path) = req.path() {
         path.split('/').skip(1)
       } else {
-        return self.error_handler.handle("Invalid request path.");
+        return self.error_handler.handle(Error {
+          msg: "Invalid request path.".to_string(),
+          kind: ::error::ErrorKind::RemoveThis
+        });
       };
 
       let resource_name = uri.next().unwrap(); // difficult to break this since split always returns at least ""
@@ -59,7 +66,10 @@ impl Service for Server {
         } else {
           match serde_json::from_str::<Value>(&resource_id) {
             Ok(val) => Some(val),
-            Err(_) => return self.error_handler.handle("Invalid JSON in id field"),
+            Err(_) => return self.error_handler.handle(Error {
+              msg: "Invalid JSON in id field".to_string(),
+              kind: ::error::ErrorKind::RemoveThis
+            }),
           }
         }
       } else {
@@ -71,13 +81,19 @@ impl Service for Server {
       // } else {
       //   Some(match serde_json::from_str::<Value>(&body_string) {
       //     Ok(val) => val,
-      //     Err(_) => return self.error_handler.handle("Invalid JSON in request body"),
+      //     Err(_) => return self.error_handler.handle(Error {
+      //   msg: "Invalid JSON in request body".to_string(),
+      //   kind: ::error::ErrorKind::RemoveThis
+      // }),
       //   })
       // };
 
       let resource = match self.resources.get(resource_name) {
           Some(resource) => resource,
-          None => return self.error_handler.handle("No resource with that name known."),
+          None => return self.error_handler.handle(Error {
+            msg: "No resource with that name known.".to_string(),
+            kind: ::error::ErrorKind::RemoveThis
+          }),
       };
 
       let params = ::Params::new(); // TODO ACTUALLY PARSE
@@ -95,7 +111,10 @@ impl Service for Server {
         &hyper::Method::Put => RequestType::Update,
         &hyper::Method::Patch => RequestType::Patch,
         &hyper::Method::Delete => RequestType::Remove,
-        _ => return self.error_handler.handle("We don't respond to that HTTP method, sorry."),
+        _ => return self.error_handler.handle(Error {
+          msg: "We don't respond to that HTTP method, sorry.".to_string(),
+          kind: ::error::ErrorKind::RemoveThis
+        }),
       };
 
       let req = Request{
@@ -106,7 +125,10 @@ impl Service for Server {
       };
 
       if !req.validate() {
-        return self.error_handler.handle("Invalid request, missing either a body or id or something.")
+        return self.error_handler.handle(Error {
+          msg: "Invalid request, missing either a body or id or something.".to_string(),
+          kind: ::error::ErrorKind::RemoveThis
+        })
       }
 
       resource.handle(req)

@@ -15,7 +15,7 @@ pub use request::Request;
 pub use request::RequestType;
 pub use resource::Resource;
 pub use error::Error;
-pub use server::Server;
+pub use server::APIServer;
 pub use resource::Reply;
 pub use resource::ListReply;
 pub use params::Params;

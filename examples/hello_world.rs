@@ -2,7 +2,6 @@ extern crate backtalk;
 extern crate futures;
 extern crate hyper;
 
-use hyper::server::Server as HTTPServer;
 use std::collections::HashMap;
 use backtalk::api::{Resource, Reply, ListReply, Params, Router, ErrorKind, Error, Request, Value};
 use backtalk::{Server, wrap_api};
@@ -50,8 +49,7 @@ fn example_guard(req: Request) -> BoxFuture<Request, Error> {
 }
 
 fn main() {
-  let server = HTTPServer::http(&"127.0.0.1:1337".parse().unwrap()).unwrap();
-  let (listening, server) = server.standalone(|| {
+  Server::run("127.0.0.1:1337", || {
     let mut router = Router::new();
     router.add("myresource", |req| {
       finished(req)
@@ -60,10 +58,8 @@ fn main() {
         .boxed()
     });
     let router_closure = move |req| router.handle(req);
-    Ok(Server::new(move |http_req| {
+    move |http_req| {
       wrap_api(http_req, &router_closure)
-    }))
-  }).unwrap();
-  println!("Listening on http://{}", listening);
-  server.run();
+    }
+  });
 }

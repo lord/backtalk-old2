@@ -10,12 +10,20 @@ pub struct Server<T: Fn(http::Request) -> BoxFuture<http::Response, hyper::Error
   func: T,
 }
 impl <T: Fn(http::Request) -> BoxFuture<http::Response, hyper::Error> + 'static> Server<T> {
-  pub fn new(func: T) -> Server<T> {
-    Server {
-      func: func,
-    }
+  pub fn run<U>(bind: &str, func: U)
+    where U: Fn() -> T + 'static + Send {
+
+    let server = http::Server::http(&bind.parse().unwrap()).unwrap();
+    let (listening, server) = server.standalone(move || {
+      let srv = Server{func: func()};
+      Ok(srv)
+    }).unwrap();
+
+    println!("Listening on http://{}", listening);
+    server.run();
   }
 }
+
 impl <T> Service for Server<T>
   where T: Fn(http::Request) -> BoxFuture<http::Response, hyper::Error> + 'static {
   type Request = http::Request;

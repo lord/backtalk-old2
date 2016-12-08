@@ -50,16 +50,21 @@ fn example_guard(req: Request) -> BoxFuture<Request, Error> {
 
 fn main() {
   server("127.0.0.1:1337", || {
-    let mut router = Router::new();
-    router.add("myresource", |req| {
-      finished(req)
-        .and_then(|req| example_guard(req))
-        .and_then(|req| MyResource{}.handle(req))
-        .boxed()
-    });
-    let router_closure = move |req| router.handle(req);
     move |http_req| {
-      wrap_api(http_req, &router_closure)
+      wrap_api(http_req, &|req| {
+        match req.resource.as_ref() {
+          "myresource" => {
+            finished(req)
+              .and_then(|req| example_guard(req))
+              .and_then(|req| MyResource{}.handle(req))
+              .boxed()
+          },
+          _ => {
+            failed(Error{msg: "couldn't find that resource".to_string(), kind: ErrorKind::RemoveThis})
+              .boxed()
+          },
+        }
+      })
     }
   });
 }

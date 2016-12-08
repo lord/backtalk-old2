@@ -28,7 +28,7 @@ impl <T> Service for Server<T>
   }
 }
 
-pub fn wrap_api<T>(http_request: http::Request, api_func: T) -> BoxFuture<http::Response, hyper::Error>
+pub fn wrap_api<T>(http_request: http::Request, api_func: &T) -> BoxFuture<http::Response, hyper::Error>
   where T: Fn(api::Request) -> BoxFuture<api::Value, api::Error> + 'static {
   let uri = http_request.uri();
   let method = http_request.method();

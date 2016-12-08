@@ -52,17 +52,16 @@ fn example_guard(req: Request) -> BoxFuture<Request, Error> {
 fn main() {
   let server = HTTPServer::http(&"127.0.0.1:1337".parse().unwrap()).unwrap();
   let (listening, server) = server.standalone(|| {
+    let mut router = Router::new();
+    router.add("myresource", |req| {
+      finished(req)
+        .and_then(|req| example_guard(req))
+        .and_then(|req| MyResource{}.handle(req))
+        .boxed()
+    });
+    let router_closure = move |req| router.handle(req);
     Ok(Server::new(move |http_req| {
-      let mut router = Router::new();
-      router.add("myresource", |req| {
-        finished(req)
-          .and_then(|req| example_guard(req))
-          .and_then(|req| MyResource{}.handle(req))
-          .boxed()
-      });
-      wrap_api(http_req, move |req| {
-        router.handle(req)
-      })
+      wrap_api(http_req, &router_closure)
     }))
   }).unwrap();
   println!("Listening on http://{}", listening);

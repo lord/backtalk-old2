@@ -10,6 +10,11 @@ pub struct Router {
 }
 
 impl Router {
+  pub fn new() -> Router {
+    Router {
+      resources: HashMap::new(),
+    }
+  }
   pub fn add_resource<T: Resource + Sync>(&mut self, name: &str, resource: T) {
     self.resources.insert(name.to_string(), Box::new(resource));
   }
@@ -41,13 +46,19 @@ impl <T: Resource + Sync> ResourceWrapper for T {
     let o = r.object.and_then(|v| from_value::<T::Object>(v).ok()); // TODO HANDLE DESERIALIZATION FAILURE
     let p = r.params;
     let res = match r.request_type {
-      // RequestType::Find => self.find(&p),
       RequestType::Get => self.get(&i.unwrap(), &p),
       RequestType::Create => self.create(&o.unwrap(), &p),
       RequestType::Update => self.update(&i.unwrap(), &o.unwrap(), &p),
       RequestType::Patch => self.patch(&i.unwrap(), &o.unwrap(), &p),
       RequestType::Remove => self.remove(&i.unwrap(), &p),
-      _ => unimplemented!(),
+      RequestType::Find => {
+        return self.find(&p).then(move |res| {
+          match res {
+            Ok(val) => Ok(serde_json::to_value(val)),
+            Err(e) => Err(e),
+          }
+        }).boxed()
+      },
     };
     res.then(move |res| {
       match res {

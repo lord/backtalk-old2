@@ -44,7 +44,9 @@ fn main() {
   let server = Server::http(&"127.0.0.1:1337".parse().unwrap()).unwrap();
   let (listening, server) = server.standalone(|| {
     let mut router = Router::new();
-    router.add_resource("myresource", MyResource{});
+    router.add("myresource", |req| {
+      MyResource{}.handle(req)
+    });
     Ok(APIServer::new(router))
   }).unwrap();
   println!("Listening on http://{}", listening);

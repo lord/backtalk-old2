@@ -1,8 +1,6 @@
-use ::{Resource, Request, Value, Error, ErrorKind, RequestType};
+use ::{Request, Value, Error, ErrorKind};
 use futures::{BoxFuture, Future, failed};
-use tokio_service::Service;
 use std::collections::HashMap;
-use serde_json;
 
 pub struct Router {
   resources: HashMap<String, Box<Fn(Request) -> BoxFuture<Value, Error>>>,

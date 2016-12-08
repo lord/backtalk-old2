@@ -53,7 +53,8 @@ fn main() {
   let (listening, server) = server.standalone(|| {
     let mut router = Router::new();
     router.add("myresource", |req| {
-      example_guard(req)
+      finished(req)
+        .and_then(|req| example_guard(req))
         .and_then(|req| MyResource{}.handle(req))
         .boxed()
     });

@@ -4,7 +4,8 @@ extern crate hyper;
 
 use hyper::server::Server;
 use std::collections::HashMap;
-use backtalk::{Resource, Reply, ListReply, APIServer, Params, Router, ErrorKind, Error, Request, Value};
+use backtalk::api::{Resource, Reply, ListReply, Params, Router, ErrorKind, Error, Request, Value};
+use backtalk::APIServer;
 use futures::{Future, finished, failed, BoxFuture};
 
 struct MyResource;

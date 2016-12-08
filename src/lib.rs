@@ -4,23 +4,7 @@ extern crate hyper;
 extern crate serde;
 extern crate serde_json;
 
-mod resource;
-mod params;
-mod error;
+pub mod api;
 mod server;
-mod request;
-mod router;
-mod guard;
 
-pub use router::Router;
-pub use request::Request;
-pub use request::RequestType;
-pub use resource::Resource;
-pub use error::Error;
-pub use error::ErrorKind;
 pub use server::APIServer;
-pub use resource::Reply;
-pub use resource::ListReply;
-pub use params::Params;
-pub use serde_json::Value;
-pub use guard::Guard;

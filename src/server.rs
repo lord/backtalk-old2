@@ -2,7 +2,7 @@ use hyper::server as http;
 use hyper;
 use tokio_service::Service;
 use futures::{BoxFuture, Future, finished};
-use ::{Error, Value, Request, RequestType};
+use ::api::{Error, Value, Request, RequestType, ErrorKind, Params};
 use serde_json;
 
 pub struct APIServer<T: Fn(Request) -> BoxFuture<Value, Error> + 'static> {
@@ -51,7 +51,7 @@ fn process_http_request(method: &hyper::Method, path: &hyper::RequestUri, body: 
   } else {
     return Err(Error {
       msg: "Invalid path, sorry".to_string(),
-      kind: ::error::ErrorKind::RemoveThis
+      kind: ErrorKind::RemoveThis
     })
   };
 
@@ -79,13 +79,13 @@ fn process_http_request(method: &hyper::Method, path: &hyper::RequestUri, body: 
     &hyper::Method::Delete => RequestType::Remove,
     _ => return Err(Error {
       msg: "We don't respond to that HTTP method, sorry.".to_string(),
-      kind: ::error::ErrorKind::RemoveThis
+      kind: ErrorKind::RemoveThis
     }),
   };
   let req = Request {
     resource: resource_name.to_string(),
     request_type: req_type,
-    params: ::Params::new(), // TODO PARSE PARAMS
+    params: Params::new(), // TODO PARSE PARAMS
     object: body_val,
     id: id_val,
   };
@@ -94,7 +94,7 @@ fn process_http_request(method: &hyper::Method, path: &hyper::RequestUri, body: 
   } else {
     Err(Error {
       msg: "Invalid request, missing either a body or id or something.".to_string(),
-      kind: ::error::ErrorKind::RemoveThis
+      kind: ErrorKind::RemoveThis
     })
   }
 }
@@ -103,7 +103,7 @@ fn parse_json(json_str: &str) -> Result<Value, Error> {
   serde_json::from_str::<Value>(&json_str).map_err(|err| {
     Error {
       msg: err.to_string(),
-      kind: ::error::ErrorKind::RemoveThis
+      kind: ErrorKind::RemoveThis
     }
   })
 }
@@ -114,7 +114,7 @@ fn parse_url(path: &str) -> Result<(&str, Option<&str>), Error> {
   let resource_name = match uri.next() {
     None | Some("") => return Err(Error {
       msg: "enter a resource name!".to_string(),
-      kind: ::error::ErrorKind::RemoveThis
+      kind: ErrorKind::RemoveThis
     }),
     Some(v) => v,
   };

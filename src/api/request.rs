@@ -1,4 +1,4 @@
-use ::{Params, Value};
+use ::api::{Params, Value};
 
 #[derive(Debug, Hash)]
 pub enum RequestType{
@@ -10,7 +10,7 @@ pub enum RequestType{
   Remove,
 }
 
-use RequestType::*;
+use self::RequestType::*;
 
 #[derive(Debug)]
 pub struct Request {

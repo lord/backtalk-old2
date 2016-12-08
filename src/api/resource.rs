@@ -1,7 +1,7 @@
 use serde::{Serialize, Deserialize};
 use futures::{finished, Future, BoxFuture};
-use ::params::Params;
-use ::{Request, Error, Value, RequestType};
+use ::api::Params;
+use ::api::{Request, Error, Value, RequestType};
 use serde_json::value::{from_value, to_value};
 
 pub type Reply<T: Resource> = BoxFuture<T::Object, Error>;

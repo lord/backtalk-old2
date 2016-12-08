@@ -1,4 +1,4 @@
-use ::{Request, Value, Error, ErrorKind};
+use ::api::{Request, Value, Error, ErrorKind};
 use futures::{BoxFuture, Future, failed};
 use std::collections::HashMap;
 

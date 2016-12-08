@@ -16,6 +16,9 @@ A web framework for APIs in Rust.
 - [x] figure out a way to add guards/filters to a single resource, maybe have the router route to a closure instead, and the closure contains the guards/resources
 - [x] add guards (request->future<request,error> map) and filters (response->future<response,error> map)
 - [ ] we can make this generic: just switch APIServer to Server, and make an api_wrap function that converts servers to APIs. We'll also need a separate HTTP Request and Response struct.
+- [ ] simplify resource.rs stuff
+- [ ] simplify api::Request, maybe switch back to enum of operations?
+- [ ] have a websockets/realtime notifications plan
 - [ ] Add `DatabaseResource` that just accepts a Diesel object/db connection and automatically becomes a full resource.
 - [ ] parse query string properly
 - [ ] `handle` should return a string and accept a serializer

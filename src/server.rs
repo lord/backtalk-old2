@@ -112,19 +112,12 @@ fn parse_url(path: &str) -> Result<(&str, Option<&str>), Error> {
   let mut uri = path.split('/').skip(1);
 
   let resource_name = match uri.next() {
-    None => return Err(Error {
-      msg: "Invalid TODO somehow you got here".to_string(),
+    None | Some("") => return Err(Error {
+      msg: "enter a resource name!".to_string(),
       kind: ::error::ErrorKind::RemoveThis
     }),
     Some(v) => v,
   };
-
-  if resource_name.is_empty() {
-    return Err(Error {
-      msg: "enter a resource name!".to_string(),
-      kind: ::error::ErrorKind::RemoveThis
-    });
-  }
 
   let resource_id = uri.next().and_then(|id| {
     if id.is_empty() {

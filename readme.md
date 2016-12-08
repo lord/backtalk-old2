@@ -2,21 +2,12 @@
   <img src="https://raw.githubusercontent.com/lord/img/master/logo-backtalk.png" alt="Backtalk: API Web Server" width="226">
   <br>
   <a href="https://travis-ci.org/lord/slate"><img src="https://travis-ci.org/lord/backtalk.svg?branch=master" alt="Build Status"></a>
+  <a href="https://crates.io/crates/backtalk"><img src="https://img.shields.io/crates/v/backtalk.svg" alt="Crate Info"></a>
+  <a href="https://docs.rs/backtalk"><img src="https://img.shields.io/badge/docs.rs-visit-green.svg" alt="Documentation"></a>
 </p>
 
-A web framework for APIs in Rust.
+Backtalk is an experimental asynchronous web framework for Rust. We try to provide simple tools that are easily composed and extended.
 
-- [x] add proper `find`, `get`, `create`, `update`, `patch`, `remove` (`setup`?) with `Vec<Self::Object>` results
-- [x] add request and response structs
-- [x] multiple resources per resource server
-- [x] custom error handlers for server
-- [x] call resource methods properly based on what was called
-- [x] create `Data` struct that corresponds to a non-error response from server. probably wraps/reexports serde's json Value
-- [x] remove all references to `hyper` from everywhere except `server.rs`.
-- [x] figure out a way to add guards/filters to a single resource, maybe have the router route to a closure instead, and the closure contains the guards/resources
-- [x] add guards (request->future<request,error> map) and filters (response->future<response,error> map)
-- [x] we can make this generic: just switch APIServer to Server, and make an api_wrap function that converts servers to APIs.
-- [ ] get rid of API router, you can just `match` on `req.resource_name`.
 - [ ] Create HTTP Request and Response structs.
 - [ ] more convenience functions/stuff for non-API routes.
 - [ ] simplify resource.rs stuff, maybe it can just return a value directly? and users can wrap with a serialization function if they want, but by default, it's values.
@@ -27,7 +18,7 @@ A web framework for APIs in Rust.
 - [ ] `handle` should return a string and accept a serializer
 - [ ] websocket serving with `ws-rs`
 - [ ] write JS library (backtalk.js) for frontend to talk to Backtalk
-- [ ] upgrade to Hyper proper once it integrates with Tokio
+- [x] upgrade to Hyper proper once it integrates with Tokio
 - [ ] Remove all unwraps
 
 ## Objects

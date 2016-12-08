@@ -3,7 +3,7 @@ extern crate futures;
 extern crate hyper;
 
 use std::collections::HashMap;
-use backtalk::api::{Resource, Reply, ListReply, Params, Router, ErrorKind, Error, Request, Value};
+use backtalk::api::{Resource, Reply, ListReply, Params, ErrorKind, Error, Request, Value};
 use backtalk::{server, wrap_api};
 use futures::{Future, finished, failed, BoxFuture};
 

@@ -13,6 +13,7 @@ A web framework for APIs in Rust.
 - [x] call resource methods properly based on what was called
 - [x] create `Data` struct that corresponds to a non-error response from server. probably wraps/reexports serde's json Value
 - [x] remove all references to `hyper` from everywhere except `server.rs`.
+- [ ] figure out a way to add guards/filters to a single resource, maybe have the router route to a closure instead, and the closure contains the guards/resources
 - [ ] add guards (request->future<request,error> map) and filters (response->future<response,error> map)
 - [ ] Add `DatabaseResource` that just accepts a Diesel object/db connection and automatically becomes a full resource.
 - [ ] parse query string properly

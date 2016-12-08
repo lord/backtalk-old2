@@ -1,7 +1,7 @@
 use serde::{Serialize, Deserialize};
 use futures::{finished, Future, BoxFuture};
 use ::params::Params;
-use ::{Request, Value, Error};
+use ::{Request, Error};
 
 pub type Reply<T: Resource> = BoxFuture<T::Object, Error>;
 pub type ListReply<T: Resource> = BoxFuture<Vec<T::Object>, Error>;

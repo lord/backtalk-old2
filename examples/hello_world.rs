@@ -2,13 +2,9 @@ extern crate backtalk;
 extern crate futures;
 extern crate hyper;
 
-use hyper::server as http;
-
 use hyper::server::Server;
 use std::collections::HashMap;
 use backtalk::{Resource, Reply, ListReply, APIServer, Params, Router};
-use std::time::Duration;
-use std::thread;
 use futures::{Future, finished};
 
 struct MyResource;

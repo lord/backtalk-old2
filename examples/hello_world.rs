@@ -47,7 +47,9 @@ fn main() {
     router.add("myresource", |req| {
       MyResource{}.handle(req)
     });
-    Ok(APIServer::new(router))
+    Ok(APIServer::new(move |req| {
+      router.handle(req)
+    }))
   }).unwrap();
   println!("Listening on http://{}", listening);
   server.run();

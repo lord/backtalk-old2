@@ -5,10 +5,10 @@ use futures::{BoxFuture, Future, finished};
 use ::{Error, Value, Request, RequestType};
 use serde_json;
 
-pub struct APIServer<T: Service<Request=Request, Response=Value, Error=Error>> {
+pub struct APIServer<T: Fn(Request) -> BoxFuture<Value, Error> + 'static> {
   service: T,
 }
-impl <T: Service<Request=Request, Response=Value, Error=Error>> APIServer<T> {
+impl <T: Fn(Request) -> BoxFuture<Value, Error> + 'static> APIServer<T> {
   pub fn new(service: T) -> APIServer<T> {
     APIServer {
       service: service,
@@ -17,7 +17,7 @@ impl <T: Service<Request=Request, Response=Value, Error=Error>> APIServer<T> {
 }
 
 
-impl <T: Service<Request=Request, Response=Value, Error=Error, Future=BoxFuture<Value, Error>>> Service for APIServer<T> {
+impl <T: Fn(Request) -> BoxFuture<Value, Error> + 'static> Service for APIServer<T> {
   type Request = http::Request;
   type Response = http::Response;
   type Error = hyper::Error;
@@ -36,7 +36,7 @@ impl <T: Service<Request=Request, Response=Value, Error=Error, Future=BoxFuture<
       Ok(req) => req,
       Err(err) => return DefaultErrorHandler{}.handle_http(err),
     };
-    self.service.call(request).then(move |res| {
+    (self.service)(request).then(move |res| {
       match res {
         Ok(val) => DefaultValueHandler{}.handle_http(val),
         Err(err) => DefaultErrorHandler{}.handle_http(err),

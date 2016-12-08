@@ -1,7 +1,5 @@
 use hyper::server as http;
 use hyper;
-use std::collections::HashMap;
-use ::resource::ResourceWrapper;
 use tokio_service::Service;
 use futures::{BoxFuture, Future, finished};
 use ::{Error, Value, Request, RequestType};
@@ -48,7 +46,7 @@ impl <T: Service<Request=Request, Response=Value, Error=Error, Future=BoxFuture<
 }
 
 fn process_http_request(method: &hyper::Method, path: &hyper::RequestUri, body: Option<&str>) -> Result<Request, Error> {
-  let path_str = if let &hyper::RequestUri::AbsolutePath{path: ref path, ..} = path {
+  let path_str = if let &hyper::RequestUri::AbsolutePath{ref path, ..} = path {
     path
   } else {
     return Err(Error {
@@ -85,6 +83,7 @@ fn process_http_request(method: &hyper::Method, path: &hyper::RequestUri, body: 
     }),
   };
   let req = Request {
+    resource: resource_name.to_string(),
     request_type: req_type,
     params: ::Params::new(), // TODO PARSE PARAMS
     object: body_val,

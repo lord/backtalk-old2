@@ -9,12 +9,15 @@ mod params;
 mod error;
 mod server;
 mod request;
+mod router;
 mod guard;
 
+pub use router::Router;
 pub use request::Request;
 pub use request::RequestType;
 pub use resource::Resource;
 pub use error::Error;
+pub use error::ErrorKind;
 pub use server::APIServer;
 pub use resource::Reply;
 pub use resource::ListReply;

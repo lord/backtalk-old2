@@ -14,6 +14,7 @@ use RequestType::*;
 
 #[derive(Debug)]
 pub struct Request {
+  pub resource: String,
   pub request_type: RequestType,
   pub params: Params,
   pub object: Option<Value>,

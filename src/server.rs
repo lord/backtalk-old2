@@ -6,22 +6,22 @@ use ::api::{Error, Value, Request, RequestType, ErrorKind, Params};
 use api;
 use serde_json;
 
-pub struct Server<T: Fn(http::Request) -> BoxFuture<http::Response, hyper::Error> + 'static> {
-  func: T,
+pub fn server<T, U>(bind: &str, func: U)
+  where U: Fn() -> T + 'static + Send,
+        T: Fn(http::Request) -> BoxFuture<http::Response, hyper::Error> + 'static {
+
+  let server = http::Server::http(&bind.parse().unwrap()).unwrap();
+  let (listening, server) = server.standalone(move || {
+    let srv = Server{func: func()};
+    Ok(srv)
+  }).unwrap();
+
+  println!("Backtalk listening on http://{}", listening);
+  server.run();
 }
-impl <T: Fn(http::Request) -> BoxFuture<http::Response, hyper::Error> + 'static> Server<T> {
-  pub fn run<U>(bind: &str, func: U)
-    where U: Fn() -> T + 'static + Send {
 
-    let server = http::Server::http(&bind.parse().unwrap()).unwrap();
-    let (listening, server) = server.standalone(move || {
-      let srv = Server{func: func()};
-      Ok(srv)
-    }).unwrap();
-
-    println!("Listening on http://{}", listening);
-    server.run();
-  }
+struct Server<T: Fn(http::Request) -> BoxFuture<http::Response, hyper::Error> + 'static> {
+  func: T,
 }
 
 impl <T> Service for Server<T>

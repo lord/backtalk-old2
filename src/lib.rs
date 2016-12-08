@@ -7,5 +7,5 @@ extern crate serde_json;
 pub mod api;
 mod server;
 
-pub use server::Server;
 pub use server::wrap_api;
+pub use server::server;

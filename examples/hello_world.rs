@@ -4,7 +4,7 @@ extern crate hyper;
 
 use std::collections::HashMap;
 use backtalk::api::{Resource, Reply, ListReply, Params, Router, ErrorKind, Error, Request, Value};
-use backtalk::{Server, wrap_api};
+use backtalk::{server, wrap_api};
 use futures::{Future, finished, failed, BoxFuture};
 
 struct MyResource;
@@ -49,7 +49,7 @@ fn example_guard(req: Request) -> BoxFuture<Request, Error> {
 }
 
 fn main() {
-  Server::run("127.0.0.1:1337", || {
+  server("127.0.0.1:1337", || {
     let mut router = Router::new();
     router.add("myresource", |req| {
       finished(req)

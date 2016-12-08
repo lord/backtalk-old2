@@ -2,7 +2,7 @@ use hyper::server as http;
 use hyper;
 use tokio_service::Service;
 use futures::{BoxFuture, Future, finished};
-use ::api::{Error, Value, Request, RequestType, ErrorKind, Params};
+use ::api::{Error, Value, Request, RequestData, ErrorKind, Params};
 use api;
 use serde_json;
 
@@ -53,13 +53,14 @@ pub fn wrap_api<T>(http_request: http::Request, api_func: &T) -> BoxFuture<http:
 }
 
 fn process_http_request(method: &hyper::Method, path: &hyper::RequestUri, body: Option<&str>) -> Result<Request, Error> {
+  fn make_err(msg: &str) -> Result<Request, Error> {
+    Err(Error{msg: msg.to_string(), kind: ErrorKind::InvalidRequest})
+  }
+
   let path_str = if let &hyper::RequestUri::AbsolutePath{ref path, ..} = path {
     path
   } else {
-    return Err(Error {
-      msg: "Invalid path, sorry".to_string(),
-      kind: ErrorKind::RemoveThis
-    })
+    return make_err("Invalid path, sorry");
   };
 
   let (resource_name, resource_id) = try!(parse_url(&path_str));
@@ -71,39 +72,35 @@ fn process_http_request(method: &hyper::Method, path: &hyper::RequestUri, body: 
     Some(s) => Some(try!(parse_json(s))),
     None => None,
   };
-  let req_type = match method {
+  let data = match (method, id_val, body_val) {
     // TODO should we handle HEAD requests?
-    &hyper::Method::Get => {
-      if let Some(_) = resource_id {
-        RequestType::Get
-      } else {
-        RequestType::Find
-      }
-    }
-    &hyper::Method::Post => RequestType::Create,
-    &hyper::Method::Put => RequestType::Update,
-    &hyper::Method::Patch => RequestType::Patch,
-    &hyper::Method::Delete => RequestType::Remove,
-    _ => return Err(Error {
-      msg: "We don't respond to that HTTP method, sorry.".to_string(),
-      kind: ErrorKind::RemoveThis
-    }),
+    (&hyper::Method::Get, Some(v), None) => RequestData::Get(v),
+    (&hyper::Method::Get, None, None) => RequestData::Find,
+    (&hyper::Method::Post, None, Some(obj)) => RequestData::Create(obj),
+    (&hyper::Method::Put, Some(id), Some(obj)) => RequestData::Update(id, obj),
+    (&hyper::Method::Patch, Some(id), Some(obj)) => RequestData::Patch(id, obj),
+    (&hyper::Method::Delete, Some(id), None) => RequestData::Remove(id),
+    (&hyper::Method::Get, _, Some(_)) =>
+      return make_err("GET methods don't allow request bodies, but one was provided."),
+    (&hyper::Method::Post, Some(_), _) =>
+      return make_err("POST methods don't accept a resource id, but one was provided."),
+    (&hyper::Method::Post, _, None) =>
+      return make_err("POST methods require a request body."),
+    (&hyper::Method::Put, _, _) =>
+      return make_err("PUT methods require a request body and a resource id."),
+    (&hyper::Method::Delete, _, Some(_)) =>
+      return make_err("Delete methods don't allow request bodies, but one was provided."),
+    (&hyper::Method::Delete, _, _) =>
+      return make_err("Delete methods require a resource id."),
+    (&hyper::Method::Patch, _, _) =>
+      return make_err("PATCH methods require a request body and a resource id."),
+    _ => return make_err("We don't respond to that HTTP method, sorry."),
   };
-  let req = Request {
+  Ok(Request {
     resource: resource_name.to_string(),
-    request_type: req_type,
+    data: data,
     params: Params::new(), // TODO PARSE PARAMS
-    object: body_val,
-    id: id_val,
-  };
-  if req.validate() {
-    Ok(req)
-  } else {
-    Err(Error {
-      msg: "Invalid request, missing either a body or id or something.".to_string(),
-      kind: ErrorKind::RemoveThis
-    })
-  }
+  })
 }
 
 fn parse_json(json_str: &str) -> Result<Value, Error> {

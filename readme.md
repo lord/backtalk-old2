@@ -10,8 +10,8 @@ Backtalk is an experimental asynchronous web framework for Rust. We try to provi
 
 - [ ] Create HTTP Request and Response structs.
 - [ ] more convenience functions/stuff for non-API routes.
-- [ ] simplify resource.rs stuff, maybe it can just return a value directly? and users can wrap with a serialization function if they want, but by default, it's values.
-- [ ] simplify api::Request, maybe switch back to enum of operations?
+- [x] simplify resource.rs stuff, maybe it can just return a value directly? and users can wrap with a serialization function if they want, but by default, it's values.
+- [x] simplify api::Request, maybe switch back to enum of operations?
 - [ ] have a websockets/realtime notifications plan
 - [ ] Add `DatabaseResource` that just accepts a Diesel object/db connection and automatically becomes a full resource.
 - [ ] parse query string properly

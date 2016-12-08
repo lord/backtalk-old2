@@ -1,47 +1,46 @@
 extern crate backtalk;
 extern crate futures;
 extern crate hyper;
+extern crate serde_json;
 
 use std::collections::HashMap;
-use backtalk::api::{Resource, Reply, ListReply, Params, ErrorKind, Error, Request, Value};
+use backtalk::api::{Resource, Params, ErrorKind, Error, Request, Value};
 use backtalk::{server, wrap_api};
 use futures::{Future, finished, failed, BoxFuture};
+use serde_json::value::to_value;
 
 struct MyResource;
 
 impl Resource for MyResource {
-  type Object = HashMap<String, String>;
-  type Id = i32;
-
-  fn find(&self, _: &Params) -> ListReply<Self> {
+  fn find(&self, _: &Params) -> BoxFuture<Value, Error> {
     let mut map = HashMap::new();
     map.insert("test".to_string(), "blah".to_string());
     let v = vec![map];
-    self.resp(v)
+    finished(to_value(v)).boxed()
   }
 
-  fn get(&self, _: &Self::Id, _: &Params) -> Reply<Self> {
+  fn get(&self, _: &Value, _: &Params) -> BoxFuture<Value, Error> {
     let mut map = HashMap::new();
     map.insert("test".to_string(), "blah".to_string());
-    finished(map).boxed()
+    finished(to_value(map)).boxed()
   }
 
-  fn create(&self, _: &Self::Object, p: &Params) -> Reply<Self> {
-    self.get(&1, p)
+  fn create(&self, _: &Value, p: &Params) -> BoxFuture<Value, Error> {
+    self.get(&Value::U64(1), p)
   }
-  fn update(&self, _: &Self::Id, _: &Self::Object, p: &Params) -> Reply<Self> {
-    self.get(&1, p)
+  fn update(&self, _: &Value, _: &Value, p: &Params) -> BoxFuture<Value, Error> {
+    self.get(&Value::U64(1), p)
   }
-  fn patch(&self, _: &Self::Id, _: &Self::Object, p: &Params) -> Reply<Self> {
-    self.get(&1, p)
+  fn patch(&self, _: &Value, _: &Value, p: &Params) -> BoxFuture<Value, Error> {
+    self.get(&Value::U64(1), p)
   }
-  fn remove(&self, _: &Self::Id, p: &Params) -> Reply<Self> {
-    self.get(&1, p)
+  fn remove(&self, _: &Value, p: &Params) -> BoxFuture<Value, Error> {
+    self.get(&Value::U64(1), p)
   }
 }
 
 fn example_guard(req: Request) -> BoxFuture<Request, Error> {
-  if req.id == Some(Value::U64(3)) {
+  if req.id() == Some(&Value::U64(3)) {
     failed(Error{msg: "access denied".to_string(), kind: ErrorKind::RemoveThis}).boxed()
   } else {
     finished(req).boxed()

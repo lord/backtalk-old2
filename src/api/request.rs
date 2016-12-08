@@ -1,56 +1,43 @@
 use ::api::{Params, Value};
 
-#[derive(Debug, Hash)]
-pub enum RequestType{
+#[derive(Debug)]
+pub enum RequestData{
   Find,
-  Get,
-  Create,
-  Update,
-  Patch,
-  Remove,
+  Get(Value),
+  Create(Value),
+  Update(Value, Value),
+  Patch(Value, Value),
+  Remove(Value),
 }
 
-use self::RequestType::*;
+use self::RequestData::*;
 
 #[derive(Debug)]
 pub struct Request {
   pub resource: String,
-  pub request_type: RequestType,
+  pub data: RequestData,
   pub params: Params,
-  pub object: Option<Value>,
-  pub id: Option<Value>,
 }
 
 impl Request {
-  pub fn validate(&self) -> bool {
+  pub fn id(&self) -> Option<&Value> {
     // check object field
-    match self.request_type {
-      Create | Update | Patch => {
-        if self.object == None {
-          return false;
-        }
-      },
-      _ => {
-        if self.object != None {
-          return false;
-        }
-      }
+    match &self.data {
+      &Get(ref v) => Some(v),
+      &Update(ref v, _) => Some(v),
+      &Patch(ref v, _) => Some(v),
+      &Remove(ref v) => Some(v),
+      _ => None,
     }
+  }
 
-    // check id field
-    match self.request_type {
-      Get | Update | Patch | Remove => {
-        if self.id == None {
-          return false;
-        }
-      },
-      _ => {
-        if self.id != None {
-          return false;
-        }
-      }
+  pub fn obj(&self) -> Option<&Value> {
+    // check object field
+    match &self.data {
+      &Create(ref v) => Some(v),
+      &Update(_, ref v) => Some(v),
+      &Patch(_, ref v) => Some(v),
+      _ => None,
     }
-
-    true
   }
 }

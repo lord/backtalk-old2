@@ -6,5 +6,6 @@ pub struct Error {
 pub enum ErrorKind {
   Forbidden,
   NotFound,
+  InvalidRequest,
   RemoveThis,
 }

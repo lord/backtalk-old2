@@ -4,8 +4,8 @@ extern crate hyper;
 
 use hyper::server::Server;
 use std::collections::HashMap;
-use backtalk::{Resource, Reply, ListReply, APIServer, Params, Router};
-use futures::{Future, finished};
+use backtalk::{Resource, Reply, ListReply, APIServer, Params, Router, ErrorKind, Error, Request, Value};
+use futures::{Future, finished, failed, BoxFuture};
 
 struct MyResource;
 
@@ -40,12 +40,22 @@ impl Resource for MyResource {
   }
 }
 
+fn example_guard(req: Request) -> BoxFuture<Request, Error> {
+  if req.id == Some(Value::U64(3)) {
+    failed(Error{msg: "access denied".to_string(), kind: ErrorKind::RemoveThis}).boxed()
+  } else {
+    finished(req).boxed()
+  }
+}
+
 fn main() {
   let server = Server::http(&"127.0.0.1:1337".parse().unwrap()).unwrap();
   let (listening, server) = server.standalone(|| {
     let mut router = Router::new();
     router.add("myresource", |req| {
-      MyResource{}.handle(req)
+      example_guard(req)
+        .and_then(|req| MyResource{}.handle(req))
+        .boxed()
     });
     Ok(APIServer::new(move |req| {
       router.handle(req)

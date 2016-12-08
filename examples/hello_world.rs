@@ -2,10 +2,10 @@ extern crate backtalk;
 extern crate futures;
 extern crate hyper;
 
-use hyper::server::Server;
+use hyper::server::Server as HTTPServer;
 use std::collections::HashMap;
 use backtalk::api::{Resource, Reply, ListReply, Params, Router, ErrorKind, Error, Request, Value};
-use backtalk::APIServer;
+use backtalk::{Server, wrap_api};
 use futures::{Future, finished, failed, BoxFuture};
 
 struct MyResource;
@@ -50,17 +50,19 @@ fn example_guard(req: Request) -> BoxFuture<Request, Error> {
 }
 
 fn main() {
-  let server = Server::http(&"127.0.0.1:1337".parse().unwrap()).unwrap();
+  let server = HTTPServer::http(&"127.0.0.1:1337".parse().unwrap()).unwrap();
   let (listening, server) = server.standalone(|| {
-    let mut router = Router::new();
-    router.add("myresource", |req| {
-      finished(req)
-        .and_then(|req| example_guard(req))
-        .and_then(|req| MyResource{}.handle(req))
-        .boxed()
-    });
-    Ok(APIServer::new(move |req| {
-      router.handle(req)
+    Ok(Server::new(move |http_req| {
+      let mut router = Router::new();
+      router.add("myresource", |req| {
+        finished(req)
+          .and_then(|req| example_guard(req))
+          .and_then(|req| MyResource{}.handle(req))
+          .boxed()
+      });
+      wrap_api(http_req, move |req| {
+        router.handle(req)
+      })
     }))
   }).unwrap();
   println!("Listening on http://{}", listening);

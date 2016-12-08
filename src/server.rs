@@ -3,46 +3,45 @@ use hyper;
 use tokio_service::Service;
 use futures::{BoxFuture, Future, finished};
 use ::api::{Error, Value, Request, RequestType, ErrorKind, Params};
+use api;
 use serde_json;
 
-pub struct APIServer<T: Fn(Request) -> BoxFuture<Value, Error> + 'static> {
-  service: T,
+pub struct Server<T: Fn(http::Request) -> BoxFuture<http::Response, hyper::Error> + 'static> {
+  func: T,
 }
-impl <T: Fn(Request) -> BoxFuture<Value, Error> + 'static> APIServer<T> {
-  pub fn new(service: T) -> APIServer<T> {
-    APIServer {
-      service: service,
+impl <T: Fn(http::Request) -> BoxFuture<http::Response, hyper::Error> + 'static> Server<T> {
+  pub fn new(func: T) -> Server<T> {
+    Server {
+      func: func,
     }
   }
 }
-
-
-impl <T: Fn(Request) -> BoxFuture<Value, Error> + 'static> Service for APIServer<T> {
+impl <T> Service for Server<T>
+  where T: Fn(http::Request) -> BoxFuture<http::Response, hyper::Error> + 'static {
   type Request = http::Request;
   type Response = http::Response;
   type Error = hyper::Error;
   type Future = BoxFuture<Self::Response, hyper::Error>;
 
-  fn call(&self, http_request: Self::Request) -> Self::Future {
-    // TODO actually use value and error handler
-    // let ref vh = self.value_handler;
-    // let ref eh = DefaultErrorHandler{};
-
-    // problem is need to move value contained within Server, but passing it to the future
-    // means it can't get access
-    let uri = http_request.uri();
-    let method = http_request.method();
-    let request = match process_http_request(method, uri, None) { // TODO ACTUALLY GET BODY
-      Ok(req) => req,
-      Err(err) => return DefaultErrorHandler{}.handle_http(err),
-    };
-    (self.service)(request).then(move |res| {
-      match res {
-        Ok(val) => DefaultValueHandler{}.handle_http(val),
-        Err(err) => DefaultErrorHandler{}.handle_http(err),
-      }
-    }).boxed()
+  fn call(&self, req: Self::Request) -> Self::Future {
+    (self.func)(req)
   }
+}
+
+pub fn wrap_api<T>(http_request: http::Request, api_func: T) -> BoxFuture<http::Response, hyper::Error>
+  where T: Fn(api::Request) -> BoxFuture<api::Value, api::Error> + 'static {
+  let uri = http_request.uri();
+  let method = http_request.method();
+  let request = match process_http_request(method, uri, None) { // TODO ACTUALLY GET BODY
+    Ok(req) => req,
+    Err(err) => return DefaultErrorHandler{}.handle_http(err),
+  };
+  api_func(request).then(move |res| {
+    match res {
+      Ok(val) => DefaultValueHandler{}.handle_http(val),
+      Err(err) => DefaultErrorHandler{}.handle_http(err),
+    }
+  }).boxed()
 }
 
 fn process_http_request(method: &hyper::Method, path: &hyper::RequestUri, body: Option<&str>) -> Result<Request, Error> {

@@ -8,6 +8,9 @@
 
 Backtalk is an experimental asynchronous web framework for Rust. We try to provide simple tools that are easily composed and extended.
 
+- [x] handle deserialization failure
+- [ ] actually get and parse the body
+- [ ] actually get and parse URL params
 - [ ] Create HTTP Request and Response structs.
 - [ ] more convenience functions/stuff for non-API routes.
 - [x] simplify resource.rs stuff, maybe it can just return a value directly? and users can wrap with a serialization function if they want, but by default, it's values.

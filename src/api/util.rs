@@ -1,6 +1,7 @@
 use hyper;
-use futures::future::{BoxFuture, finished, Future};
+use futures::future::{BoxFuture, finished, failed, Future};
 use serde_json;
+use serde::{Serialize, Deserialize};
 use ::api::{Value, Error, ErrorKind, Request, RequestData, Params};
 
 trait ErrorHandler: 'static + Sync + Send {
@@ -28,6 +29,24 @@ impl ValueHandler for DefaultValueHandler {
   }
 }
 
+pub fn serialize<T, U, F>(val: Value, func: F) -> BoxFuture<Value, Error>
+  where F: FnOnce(T) -> BoxFuture<U, Error>,
+  T: Deserialize,
+  U: Serialize + 'static
+{
+  match serde_json::from_value(val) {
+    Ok(input) => {
+      func(input).map(|res| {
+        serde_json::to_value(res)
+      }).boxed()
+    },
+    Err(_) => failed(Error{
+      kind: ErrorKind::InvalidRequest,
+      msg: "Failed to serialize TODO.".to_string()
+    }).boxed(),
+  }
+}
+
 pub fn wrap_api<T>(http_request: hyper::server::Request, api_func: &T) -> BoxFuture<hyper::server::Response, hyper::Error>
   where T: Fn(Request) -> BoxFuture<Value, Error> + 'static {
   let uri = http_request.uri();
@@ -47,6 +66,35 @@ pub fn wrap_api<T>(http_request: hyper::server::Request, api_func: &T) -> BoxFut
 fn process_http_request(method: &hyper::Method, path: &hyper::RequestUri, body: Option<&str>) -> Result<Request, Error> {
   fn make_err(msg: &str) -> Result<Request, Error> {
     Err(Error{msg: msg.to_string(), kind: ErrorKind::InvalidRequest})
+  }
+  fn parse_json(json_str: &str) -> Result<Value, Error> {
+    serde_json::from_str::<Value>(&json_str).map_err(|err| {
+      Error {
+        msg: err.to_string(),
+        kind: ErrorKind::RemoveThis
+      }
+    })
+  }
+  fn parse_url(path: &str) -> Result<(&str, Option<&str>), Error> {
+    let mut uri = path.split('/').skip(1);
+
+    let resource_name = match uri.next() {
+      None | Some("") => return Err(Error {
+        msg: "enter a resource name!".to_string(),
+        kind: ErrorKind::RemoveThis
+      }),
+      Some(v) => v,
+    };
+
+    let resource_id = uri.next().and_then(|id| {
+      if id.is_empty() {
+        None
+      } else {
+        Some(id)
+      }
+    });
+
+    Ok((resource_name, resource_id))
   }
 
   let path_str = if let &hyper::RequestUri::AbsolutePath{ref path, ..} = path {
@@ -93,36 +141,5 @@ fn process_http_request(method: &hyper::Method, path: &hyper::RequestUri, body: 
     data: data,
     params: Params::new(), // TODO PARSE PARAMS
   })
-}
-
-fn parse_json(json_str: &str) -> Result<Value, Error> {
-  serde_json::from_str::<Value>(&json_str).map_err(|err| {
-    Error {
-      msg: err.to_string(),
-      kind: ErrorKind::RemoveThis
-    }
-  })
-}
-
-fn parse_url(path: &str) -> Result<(&str, Option<&str>), Error> {
-  let mut uri = path.split('/').skip(1);
-
-  let resource_name = match uri.next() {
-    None | Some("") => return Err(Error {
-      msg: "enter a resource name!".to_string(),
-      kind: ErrorKind::RemoveThis
-    }),
-    Some(v) => v,
-  };
-
-  let resource_id = uri.next().and_then(|id| {
-    if id.is_empty() {
-      None
-    } else {
-      Some(id)
-    }
-  });
-
-  Ok((resource_name, resource_id))
 }
 

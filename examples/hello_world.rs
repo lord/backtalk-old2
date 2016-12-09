@@ -4,7 +4,7 @@ extern crate hyper;
 extern crate serde_json;
 
 use std::collections::HashMap;
-use backtalk::api::{Resource, Params, ErrorKind, Error, Request, Value, wrap_api};
+use backtalk::api::{Resource, Params, ErrorKind, Error, Request, Value, wrap_api, serialize};
 use futures::{Future, finished, failed, BoxFuture};
 use serde_json::value::to_value;
 
@@ -18,23 +18,26 @@ impl Resource for MyResource {
     finished(to_value(v)).boxed()
   }
 
-  fn get(&self, _: &Value, _: &Params) -> BoxFuture<Value, Error> {
+  fn get(&self, _: Value, _: &Params) -> BoxFuture<Value, Error> {
     let mut map = HashMap::new();
     map.insert("test".to_string(), "blah".to_string());
     finished(to_value(map)).boxed()
   }
 
-  fn create(&self, _: &Value, p: &Params) -> BoxFuture<Value, Error> {
-    self.get(&Value::U64(1), p)
+  fn create(&self, obj: Value, p: &Params) -> BoxFuture<Value, Error> {
+    serialize(obj, |map: HashMap<String, String>| {
+      let mystr = format!("{:?}", map);
+      finished(mystr).boxed()
+    })
   }
-  fn update(&self, _: &Value, _: &Value, p: &Params) -> BoxFuture<Value, Error> {
-    self.get(&Value::U64(1), p)
+  fn update(&self, _: Value, _: Value, p: &Params) -> BoxFuture<Value, Error> {
+    self.get(Value::U64(1), p)
   }
-  fn patch(&self, _: &Value, _: &Value, p: &Params) -> BoxFuture<Value, Error> {
-    self.get(&Value::U64(1), p)
+  fn patch(&self, _: Value, _: Value, p: &Params) -> BoxFuture<Value, Error> {
+    self.get(Value::U64(1), p)
   }
-  fn remove(&self, _: &Value, p: &Params) -> BoxFuture<Value, Error> {
-    self.get(&Value::U64(1), p)
+  fn remove(&self, _: Value, p: &Params) -> BoxFuture<Value, Error> {
+    self.get(Value::U64(1), p)
   }
 }
 

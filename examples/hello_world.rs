@@ -4,8 +4,7 @@ extern crate hyper;
 extern crate serde_json;
 
 use std::collections::HashMap;
-use backtalk::api::{Resource, Params, ErrorKind, Error, Request, Value};
-use backtalk::{server, wrap_api};
+use backtalk::api::{Resource, Params, ErrorKind, Error, Request, Value, wrap_api};
 use futures::{Future, finished, failed, BoxFuture};
 use serde_json::value::to_value;
 
@@ -48,7 +47,7 @@ fn example_guard(req: Request) -> BoxFuture<Request, Error> {
 }
 
 fn main() {
-  server("127.0.0.1:1337", || {
+  backtalk::server("127.0.0.1:1337", || {
     move |http_req| {
       wrap_api(http_req, &|req| {
         match req.resource.as_ref() {

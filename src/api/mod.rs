@@ -2,6 +2,7 @@ mod request;
 mod resource;
 mod error;
 mod params;
+mod util;
 
 pub use serde_json::Value;
 pub use self::error::Error;
@@ -10,3 +11,4 @@ pub use self::request::Request;
 pub use self::request::RequestData;
 pub use self::resource::Resource;
 pub use self::params::Params;
+pub use self::util::*;

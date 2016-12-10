@@ -8,20 +8,19 @@
 
 Backtalk is an experimental asynchronous web framework for Rust. We try to provide simple tools that are easily composed and extended.
 
+- [x] simplify resource.rs stuff, maybe it can just return a value directly? and users can wrap with a serialization function if they want, but by default, it's values.
+- [x] simplify api::Request, maybe switch back to enum of operations?
 - [x] handle deserialization failure
+- [x] upgrade to Hyper proper once it integrates with Tokio
 - [ ] actually get and parse the body
 - [ ] actually get and parse URL params
 - [ ] Create HTTP Request and Response structs.
 - [ ] more convenience functions/stuff for non-API routes.
-- [x] simplify resource.rs stuff, maybe it can just return a value directly? and users can wrap with a serialization function if they want, but by default, it's values.
-- [x] simplify api::Request, maybe switch back to enum of operations?
 - [ ] have a websockets/realtime notifications plan
 - [ ] Add `DatabaseResource` that just accepts a Diesel object/db connection and automatically becomes a full resource.
-- [ ] parse query string properly
 - [ ] `handle` should return a string and accept a serializer
 - [ ] websocket serving with `ws-rs`
 - [ ] write JS library (backtalk.js) for frontend to talk to Backtalk
-- [x] upgrade to Hyper proper once it integrates with Tokio
 - [ ] Remove all unwraps
 
 ## Objects

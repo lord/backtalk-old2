@@ -16,7 +16,7 @@ pub trait Resource: Sized + 'static + Send {
     // TODO return error unless r.validate() == true
     let p = r.params;
     let res = match r.data {
-      RequestData::Get(id) => self.get(id, &p), // TODO HANDLE DESERIALIZATION FAILURE
+      RequestData::Get(id) => self.get(id, &p),
       RequestData::Create(obj) => self.create(obj, &p),
       RequestData::Update(id, obj) => self.update(id, obj, &p),
       RequestData::Patch(id, obj) => self.patch(id, obj, &p),

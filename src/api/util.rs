@@ -1,5 +1,6 @@
 use hyper;
 use futures::future::{BoxFuture, finished, failed, Future};
+use futures::stream::Stream;
 use serde_json;
 use serde::{Serialize, Deserialize};
 use ::api::{Value, Error, ErrorKind, Request, RequestData, Params};
@@ -51,6 +52,7 @@ pub fn wrap_api<T>(http_request: hyper::server::Request, api_func: &T) -> BoxFut
   where T: Fn(Request) -> BoxFuture<Value, Error> + 'static {
   let uri = http_request.uri();
   let method = http_request.method();
+  // http_request.body().collect().map(|bod| {println!("{:?}", bod);});
   let request = match process_http_request(method, uri, None) { // TODO ACTUALLY GET BODY
     Ok(req) => req,
     Err(err) => return DefaultErrorHandler{}.handle_http(err),

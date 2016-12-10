@@ -16,7 +16,7 @@ trait ValueHandler: 'static + Sync + Send {
 struct DefaultErrorHandler;
 impl ErrorHandler for DefaultErrorHandler {
   fn handle_http(&self, err: Error) -> BoxFuture<hyper::server::Response, hyper::Error> {
-    let resp = hyper::server::Response::new().body(err.msg.into_bytes());
+    let resp = hyper::server::Response::new().with_body(err.msg.into_bytes());
     finished(resp).boxed()
   }
 }
@@ -25,7 +25,7 @@ struct DefaultValueHandler;
 impl ValueHandler for DefaultValueHandler {
   fn handle_http(&self, val: Value) -> BoxFuture<hyper::server::Response, hyper::Error> {
     let resp_body = serde_json::to_vec(&val).unwrap();
-    let http_resp = hyper::server::Response::new().body(resp_body);
+    let http_resp = hyper::server::Response::new().with_body(resp_body);
     finished(http_resp).boxed()
   }
 }

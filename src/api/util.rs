@@ -53,11 +53,11 @@ pub fn wrap_api<T>(http_request: hyper::server::Request, api_func: &T) -> BoxFut
   let uri = http_request.uri().clone();
   let method = http_request.method().clone();
   // http_request.body().collect().map(|bod| {println!("{:?}", bod);});
-  let request = match process_http_request(method, uri, None) { // TODO ACTUALLY GET BODY
-    Ok(req) => req,
-    Err(err) => return DefaultErrorHandler{}.handle_http(err),
+  let prom = match process_http_request(method, uri, None) { // TODO ACTUALLY GET BODY
+    Ok(req) => api_func(req),
+    Err(err) => failed(err).boxed(),
   };
-  api_func(request).then(move |res| {
+  prom.then(move |res| {
     match res {
       Ok(val) => DefaultValueHandler{}.handle_http(val),
       Err(err) => DefaultErrorHandler{}.handle_http(err),

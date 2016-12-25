@@ -12,7 +12,7 @@ Backtalk is an experimental asynchronous web framework for Rust. We try to provi
 - [x] simplify api::Request, maybe switch back to enum of operations?
 - [x] handle deserialization failure
 - [x] upgrade to Hyper proper once it integrates with Tokio
-- [ ] actually get and parse the body
+- [x] actually get and parse the body
 - [ ] actually get and parse URL params
 - [ ] Create HTTP Request and Response structs.
 - [ ] more convenience functions/stuff for non-API routes.

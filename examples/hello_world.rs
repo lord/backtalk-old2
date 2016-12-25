@@ -52,7 +52,7 @@ fn example_guard(req: Request) -> BoxFuture<Request, Error> {
 fn main() {
   backtalk::server("127.0.0.1:1337", || {
     move |http_req| {
-      wrap_api(http_req, &|req| {
+      wrap_api(http_req, |req| {
         match req.resource.as_ref() {
           "myresource" => {
             finished(req)

@@ -48,16 +48,23 @@ pub fn serialize<T, U, F>(val: Value, func: F) -> BoxFuture<Value, Error>
   }
 }
 
-pub fn wrap_api<T>(http_request: hyper::server::Request, api_func: &T) -> BoxFuture<hyper::server::Response, hyper::Error>
-  where T: Fn(Request) -> BoxFuture<Value, Error> + 'static {
+pub fn wrap_api<T>(http_request: hyper::server::Request, api_func: T) -> BoxFuture<hyper::server::Response, hyper::Error>
+  where T: 'static + Sync + Send + Fn(Request) -> BoxFuture<Value, Error> {
   let uri = http_request.uri().clone();
   let method = http_request.method().clone();
-  // http_request.body().collect().map(|bod| {println!("{:?}", bod);});
-  let prom = match process_http_request(method, uri, None) { // TODO ACTUALLY GET BODY
-    Ok(req) => api_func(req),
-    Err(err) => failed(err).boxed(),
-  };
-  prom.then(move |res| {
+  http_request.body().collect().then(move |body_chunks| {
+    let body = body_chunks.ok().and_then(|body_chunks| {
+      let mut v: Vec<u8> = Vec::new();
+      for chunk in body_chunks {
+        v.extend(chunk.iter());
+      }
+      String::from_utf8(v).ok()
+    });
+    match process_http_request(&method, &uri, body) {
+      Ok(req) => api_func(req),
+      Err(err) => failed(err).boxed(),
+    }
+  }).then(move |res| {
     match res {
       Ok(val) => DefaultValueHandler{}.handle_http(val),
       Err(err) => DefaultErrorHandler{}.handle_http(err),
@@ -65,7 +72,7 @@ pub fn wrap_api<T>(http_request: hyper::server::Request, api_func: &T) -> BoxFut
   }).boxed()
 }
 
-fn process_http_request(method: hyper::Method, path: hyper::RequestUri, body: Option<&str>) -> Result<Request, Error> {
+fn process_http_request(method: &hyper::Method, path: &hyper::RequestUri, body: Option<String>) -> Result<Request, Error> {
   fn make_err(msg: &str) -> Result<Request, Error> {
     Err(Error{msg: msg.to_string(), kind: ErrorKind::InvalidRequest})
   }
@@ -99,7 +106,7 @@ fn process_http_request(method: hyper::Method, path: hyper::RequestUri, body: Op
     Ok((resource_name, resource_id))
   }
 
-  let path_str = if let hyper::RequestUri::AbsolutePath{ref path, ..} = path {
+  let path_str = if let &hyper::RequestUri::AbsolutePath{ref path, ..} = path {
     path
   } else {
     return make_err("Invalid path, sorry");
@@ -107,7 +114,7 @@ fn process_http_request(method: hyper::Method, path: hyper::RequestUri, body: Op
 
   let (resource_name, resource_id) = try!(parse_url(&path_str));
   let body_val = match body {
-    Some(s) => Some(try!(parse_json(s))),
+    Some(s) => Some(try!(parse_json(&s))),
     None => None,
   };
   let id_val = match resource_id {
@@ -116,25 +123,25 @@ fn process_http_request(method: hyper::Method, path: hyper::RequestUri, body: Op
   };
   let data = match (method, id_val, body_val) {
     // TODO should we handle HEAD requests?
-    (hyper::Method::Get, Some(v), None) => RequestData::Get(v),
-    (hyper::Method::Get, None, None) => RequestData::Find,
-    (hyper::Method::Post, None, Some(obj)) => RequestData::Create(obj),
-    (hyper::Method::Put, Some(id), Some(obj)) => RequestData::Update(id, obj),
-    (hyper::Method::Patch, Some(id), Some(obj)) => RequestData::Patch(id, obj),
-    (hyper::Method::Delete, Some(id), None) => RequestData::Remove(id),
-    (hyper::Method::Get, _, Some(_)) =>
+    (&hyper::Method::Get, Some(v), None) => RequestData::Get(v),
+    (&hyper::Method::Get, None, None) => RequestData::Find,
+    (&hyper::Method::Post, None, Some(obj)) => RequestData::Create(obj),
+    (&hyper::Method::Put, Some(id), Some(obj)) => RequestData::Update(id, obj),
+    (&hyper::Method::Patch, Some(id), Some(obj)) => RequestData::Patch(id, obj),
+    (&hyper::Method::Delete, Some(id), None) => RequestData::Remove(id),
+    (&hyper::Method::Get, _, Some(_)) =>
       return make_err("GET methods don't allow request bodies, but one was provided."),
-    (hyper::Method::Post, Some(_), _) =>
+    (&hyper::Method::Post, Some(_), _) =>
       return make_err("POST methods don't accept a resource id, but one was provided."),
-    (hyper::Method::Post, _, None) =>
+    (&hyper::Method::Post, _, None) =>
       return make_err("POST methods require a request body."),
-    (hyper::Method::Put, _, _) =>
+    (&hyper::Method::Put, _, _) =>
       return make_err("PUT methods require a request body and a resource id."),
-    (hyper::Method::Delete, _, Some(_)) =>
+    (&hyper::Method::Delete, _, Some(_)) =>
       return make_err("Delete methods don't allow request bodies, but one was provided."),
-    (hyper::Method::Delete, _, _) =>
+    (&hyper::Method::Delete, _, _) =>
       return make_err("Delete methods require a resource id."),
-    (hyper::Method::Patch, _, _) =>
+    (&hyper::Method::Patch, _, _) =>
       return make_err("PATCH methods require a request body and a resource id."),
     _ => return make_err("We don't respond to that HTTP method, sorry."),
   };
